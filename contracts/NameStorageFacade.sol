@@ -1,43 +1,33 @@
 pragma solidity ^0.4.15;
 
-import './BaseNameStorage.sol';
+import './NameStorageLib.sol';
 
 contract NameStorageFacade {
 
-    mapping (uint => address) nameTypeToContract;
+    using NameStorageLib for NameStorageLib.Store;
+    mapping (uint => NameStorageLib.Store) nameTypeToStore;
 
-    function ensureCanStore(uint nameType) {
-        address existingContract = nameTypeToContract[nameType];
-        if (existingContract == address(0)) {
-            existingContract = new BaseNameStorage(nameType);
-            nameTypeToContract[nameType] = existingContract;
-        }
-    }
+    event GotName(bytes32 indexed nameHash, uint nameIx, uint nameType);
 
-    function requireNameTypeAddress(uint nameType) constant returns (address) {
-        var result = nameTypeToContract[nameType];
-        require (result != address(0));
-        return result;
+    function getNameChunkCount(uint nameType, uint ix) constant returns (uint) {
+        return nameTypeToStore[nameType].getNameChunkCount(ix);
     }
 
     function getNameCount(uint nameType) constant returns (uint) {
-        var bns = BaseNameStorage(requireNameTypeAddress(nameType));
-        return bns.getNameCount();
+        return nameTypeToStore[nameType].getNameCount();
     }
 
     function getNameChunkAt(uint nameType, uint ix, uint chunkIndex) constant returns (bytes32) {
-        var bns = BaseNameStorage(requireNameTypeAddress(nameType));
-        return bns.getNameChunkAt(ix, chunkIndex);
+        return nameTypeToStore[nameType].getNameChunkAt(ix, chunkIndex);
     }
 
     function getNameIndex(uint nameType, bytes32[] schemaNameParts) constant returns (int) {
-        var bns = BaseNameStorage(requireNameTypeAddress(nameType));
-        return bns.getNameIndex(schemaNameParts);
+        return nameTypeToStore[nameType].getNameIndex(schemaNameParts);
     }
 
     function submitName(uint nameType, bytes32[] schemaNameParts) {
-        var bns = BaseNameStorage(requireNameTypeAddress(nameType));
-        bns.submitName(schemaNameParts);
+        var (keccak256Val, newIx) = nameTypeToStore[nameType].submitName(schemaNameParts);
+        GotName(keccak256Val, newIx, nameType);
     }
 
     function doThrow() {

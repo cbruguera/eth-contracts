@@ -11,16 +11,9 @@ var NameStorageFacade = artifacts.require("./NameStorageFacade.sol");
 module.exports = function(deployer) {
   deployer.deploy(NameStorageLib);
   deployer.link(NameStorageLib, NameStorageFacade);
-  
-  // deployer.deploy(TestContract, 3); 
-  // deployer.deploy(AddressSet); 
-  // deployer.deploy(BaseNameStorage); 
   deployer.deploy(KeyProofs);
-  
   deployer.deploy(NameStorageFacade);
-
   
-
-  // TODO: claimregistry doesnt query keyproofs
-  deployer.deploy(ClaimRegistry/*, KeyProofs.address*/);
+  
+  deployer.then(_ => deployer.deploy(ClaimRegistry, KeyProofs.address, NameStorageFacade.address));
 };

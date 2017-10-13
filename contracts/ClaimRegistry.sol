@@ -1,220 +1,87 @@
 pragma solidity ^0.4.15;
 
+import './NameStorageFacade.sol';
+import './KeyProofs.sol';
+
 contract ClaimRegistry {
 
+    // type indices
+    uint constant TYPE_TIX = 0; 
+    uint constant ATTR_TIX = 1; 
+    uint constant URL_TIX = 2; 
+
     address _keyProofsAddr;
+    address _nameStorageFacade;
 
-    function ClaimRegistry(address keyProofs) {
+    function ClaimRegistry(address keyProofs, address nameStorageFacade) {
         _keyProofsAddr = keyProofs;
+        _nameStorageFacade = nameStorageFacade;
     }
 
-    event GotSchemaNameV1(bytes32 indexed nameHash, uint ix);
-    event GotClaimNameV1(bytes32 indexed nameHash, uint ix);
-    event GotClaimV1(address indexed subject, uint schemaIx, uint claimIx, bytes32 urlHash);
-
-    struct NameChunksV1 {
-        mapping (uint => bytes32) chunks;
-        uint chunkCount;
-    }
-
-    mapping (uint => bytes32[]) schemaIxToName;
-    mapping (uint => bytes32[]) claimIxToName;
-    
-    uint schemaNameCount;
-    uint claimNameCount;
-
-    // struct ClaimV1 {
-    //     address issuer;
-    //     bytes url;
-    // }
+    event GotClaim(address indexed subject, uint typeIx, uint attrIx, uint urlIx);
 
     struct ClaimSetV1 {
-        bytes[] urls;
+        uint[] urls;
         address[] issuers;
         bool isValid;
     }
 
-    mapping (address => mapping(uint => mapping(uint => ClaimSetV1))) subjectToSchemaToClaimToValues;
-    mapping (address => mapping(uint => uint[])) subjectSchemaClaimIndexes; 
-    mapping (address => uint[]) subjectSchemaIndexes;
+    mapping (address => mapping(uint => mapping(uint => ClaimSetV1))) subjectToTypeToAttrToClaims;
+    mapping (address => mapping(uint => uint[])) subjectTypeClaimIndexes; 
+    mapping (address => uint[]) subjectTypeIndexes;
 
-    function getSubjectSchemaCount(address subject) constant returns (uint) {
-        return subjectSchemaIndexes[subject].length;
+    function submitClaim(address subject, uint typeIx, uint attrIx, uint urlIx) {
+        var isSelf = (msg.sender == subject);
+        var isValidator = KeyProofs(_keyProofsAddr).isValidatedBy(subject, msg.sender);
+
+        require(isSelf || isValidator);
+
+        require(typeIx > 0);
+        require(attrIx > 0);
+        require(urlIx > 0);
+
+        // type/attr/url exists
+        require(NameStorageFacade(_nameStorageFacade).getNameCount(TYPE_TIX) >= typeIx);
+        require(NameStorageFacade(_nameStorageFacade).getNameCount(ATTR_TIX) >= attrIx);
+        require(NameStorageFacade(_nameStorageFacade).getNameCount(URL_TIX) >= urlIx);
+
+        if (subjectToTypeToAttrToClaims[subject][typeIx][attrIx].isValid == false) {
+            subjectToTypeToAttrToClaims[subject][typeIx][attrIx].isValid = true;
+            subjectTypeIndexes[subject].push(typeIx);
+            subjectTypeClaimIndexes[subject][typeIx].push(attrIx);
+        }
+        
+        subjectToTypeToAttrToClaims[subject][typeIx][attrIx].urls.push(urlIx);
+        subjectToTypeToAttrToClaims[subject][typeIx][attrIx].issuers.push(msg.sender);
+
+        GotClaim(subject, typeIx, attrIx, urlIx);
+     }
+
+
+    function getSubjectTypeCount(address subject) constant returns (uint) {
+        return subjectTypeIndexes[subject].length;
     }
 
-    function getSubjectSchemaClaimCount(address subject, uint schemaNameIx) constant returns (uint) {
-        return subjectSchemaClaimIndexes[subject][schemaNameIx].length;
+    function getSubjectTypeAttrCount(address subject, uint typeNameIx) constant returns (uint) {
+        return subjectTypeClaimIndexes[subject][typeNameIx].length;
     }
 
-    function getSubjectSchemaAt(address subject, uint ix) constant returns (uint) {
-        return subjectSchemaIndexes[subject][ix];
+    function getSubjectTypeAt(address subject, uint ix) constant returns (uint) {
+        return subjectTypeIndexes[subject][ix];
     }
 
-    function getSubjectSchemaClaimAt(address subject, uint schemaNameIx, uint ix) constant returns (uint) {
-        return subjectSchemaClaimIndexes[subject][schemaNameIx][ix];
+    function getSubjectTypeAttrAt(address subject, uint typeNameIx, uint ix) constant returns (uint) {
+        return subjectTypeClaimIndexes[subject][typeNameIx][ix];
     }
 
-    function getSubjectClaimSetSize(address subject, uint schemaNameIx, uint claimNameIx) constant returns (uint) {
-        return subjectToSchemaToClaimToValues[subject][schemaNameIx][claimNameIx].urls.length;
+    function getSubjectClaimSetSize(address subject, uint typeNameIx, uint attrNameIx) constant returns (uint) {
+        return subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].urls.length;
     }
 
-    function getSubjectClaimSetEntryChunk(address subject, uint schemaNameIx, uint claimNameIx, uint claimIx, uint urlChunkIx) constant returns (address issuer, bytes32 urlChunk)
+    function getSubjectClaimSetEntryChunk(address subject, uint typeNameIx, uint attrNameIx, uint attrIx) constant returns (address issuer, uint url)
     {
-        issuer = subjectToSchemaToClaimToValues[subject][schemaNameIx][claimNameIx].issuers[claimIx];
-        bytes memory url = subjectToSchemaToClaimToValues[subject][schemaNameIx][claimNameIx].urls[claimIx];
-        
-        urlChunk = extract(url, urlChunkIx);
-    }
-
-    function submitClaim(address subject, uint schemaIx, uint claimIx, bytes32[] urlParts) {
-        // TODO: claimregistry doesnt query keyproofs
-
-        if (subjectToSchemaToClaimToValues[subject][schemaIx][claimIx].isValid == false) {
-            subjectToSchemaToClaimToValues[subject][schemaIx][claimIx].isValid = true;
-            subjectSchemaIndexes[subject].push(schemaIx);
-            subjectSchemaClaimIndexes[subject][schemaIx].push(claimIx);
-        }
-
-        bytes memory url = bytes32ArrayToBytes(urlParts);
-        subjectToSchemaToClaimToValues[subject][schemaIx][claimIx].urls.push(url);
-        subjectToSchemaToClaimToValues[subject][schemaIx][claimIx].issuers.push(msg.sender);
-
-        GotClaimV1(subject, schemaIx, claimIx, sha3(url));
-    }
-
-    function getSchemaNameCount() constant returns (uint) {
-        return schemaNameCount;
-    }
-
-    function getSchemaNameChunkAt(uint ix, uint chunkIndex) constant returns (bytes32) {
-        return schemaIxToName[ix][chunkIndex];
-    }
-
-    function getClaimNameChunkAt(uint ix, uint chunkIndex) constant returns (bytes32) {
-        return claimIxToName[ix][chunkIndex];
-    }
-
-    function getClaimNameChunkCount(uint ix) constant returns (uint) {
-        return claimIxToName[ix].length;
-    }
-
-    function getSchemaNameIndex(bytes32[] schemaNameParts) constant returns (int) {
-        bytes memory schemaName = bytes32ArrayToBytes(schemaNameParts);
-        for (uint i = 0; i < schemaNameCount; ++i) {
-            bytes memory currentSchemaName = bytes32ArrayToBytes(schemaIxToName[i]);
-            if (sha3(currentSchemaName) == sha3(schemaName)) {
-                return int(i);
-            }
-        }
-        return -1;
-    }
-
-    function submitSchemaName(bytes32[] schemaNameParts) {
-        require(getSchemaNameIndex(schemaNameParts) == -1);
-
-        var newIx = schemaNameCount;
-        schemaNameCount += 1;
-
-        schemaIxToName[newIx] = schemaNameParts;
-
-        bytes memory schemaName = bytes32ArrayToBytes(schemaNameParts);
-        GotSchemaNameV1(sha3(schemaName), newIx);
-    }
-
-    function getClaimNameCount() constant returns (uint) {
-        return claimNameCount;
-    }
-
-    function getClaimNameIndex(bytes32[] claimNameParts) constant returns (int) {
-        bytes memory claimName = bytes32ArrayToBytes(claimNameParts);
-        for (uint i = 0; i < claimNameCount; ++i) {
-            bytes memory currentClaimName = bytes32ArrayToBytes(claimIxToName[i]);
-            
-            if (sha3(currentClaimName) == sha3(claimName)) {
-                return int(i);
-            }
-        }
-        return -1;
-    }
-
-    function submitClaimName(bytes32[] claimNameParts) {
-        require(getClaimNameIndex(claimNameParts) == -1);
-
-        var newIx = claimNameCount;
-        claimNameCount += 1;
-
-        claimIxToName[newIx] = claimNameParts;
-        
-        bytes memory claimName = bytes32ArrayToBytes(claimNameParts);
-        GotClaimNameV1(sha3(claimName), newIx);
-    }
-
-    // function getSchemaNameChunk(address subject, uint schemaIndex, uint chunkIndex) constant returns (bytes32) {
-    //     return extract(subjectData[subject].schemas[schemaIndex].name, chunkIndex);
-    // }
-
-    // function submitClaim(address subject, bytes32[] schemaNameParts, bytes32[] claimNameParts, address validator, bytes32[] urlData) {
-    //     bytes memory schemaName = bytes32ArrayToBytes(schemaNameParts);
-    //     bytes memory claimName = bytes32ArrayToBytes(claimNameParts);
-    //     bytes memory claimValue = bytes32ArrayToBytes(urlData);
-
-    //     SubjectData storage subjData = subjectData[subject];
-    //     uint subjectSchemaIx = subjData.schemaNamesToIndex[schemaName];
-        
-    //     if (subjectSchemaIx == 0) {
-    //         subjectSchemaIx = subjData.schemaIndexes.length + 1;
-    //         subjData.schemaIndexes.push(subjectSchemaIx);
-    //         subjData.schemaNamesToIndex[schemaName] = subjectSchemaIx;
-            
-    //         SchemaData storage sd;
-    //         subjData.schemas[subjectSchemaIx] = sd;
-    //     }
-
-    //     SchemaData memory schemaData = subjData.schemas[subjectSchemaIx];
-    //     uint storage claimIx = schemaData.claimNamesToIndex[claimName];
-    //     if (claimIx == 0) {
-    //         claimIx = schemaData.claimIndexes.length + 1;
-    //         schemaData.claimIndexes.push(claimIx);
-    //         schemaData.claimNamesToIndex[claimName] = claimIx;
-
-    //         ClaimData storage cd;
-    //         schemaData.claims[claimIx] = cd;
-    //     }
-
-    //     ClaimData memory claimData = schemaData.claims[claimIx];
-    //     uint valueIx = claimData.issuerToIndex[msg.sender];
-    //     require (valueIx == 0);
-
-    //     valueIx = claimData.valueIndexes.length + 1;
-    //     claimData.claimValue[valueIx] = claimValue;
-    //     claimData.issuerToIndex[msg.sender] = valueIx;
-    //     claimData.valueIndexes.push(valueIx);
-    // }
-
-    function extract(bytes data, uint chunk) constant returns (bytes32 result)
-    { 
-        for (uint i=0; i<32;i++) {
-            result^=(bytes32(0xff00000000000000000000000000000000000000000000000000000000000000)&data[i+chunk*32])>>(i*8);
-        }
-    }
-    
-    function bytes32ArrayToBytes (bytes32[] data) constant returns (bytes) {
-        bytes memory bytesString = new bytes(data.length * 32);
-        uint urlLength;
-        for (uint i=0; i<data.length; i++) {
-            for (uint j=0; j<32; j++) {
-                byte char = byte(bytes32(uint(data[i]) * 2 ** (8 * j)));
-                if (char != 0) {
-                    bytesString[urlLength] = char;
-                    urlLength += 1;
-                }
-            }
-        }
-        bytes memory bytesStringTrimmed = new bytes(urlLength);
-        for (i=0; i<urlLength; i++) {
-            bytesStringTrimmed[i] = bytesString[i];
-        }
-        return bytesStringTrimmed;
+        issuer = subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].issuers[attrIx];
+        url = subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].urls[attrIx];
     }
 
     function getKeyProofsAddress() constant returns(address) {

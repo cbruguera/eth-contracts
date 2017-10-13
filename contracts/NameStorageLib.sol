@@ -11,6 +11,10 @@ library NameStorageLib {
         return self.nameCount;
     }
 
+    function getNameChunkCount(Store storage self, uint ix) constant returns (uint) {
+        return self.ixToName[ix].length;
+    }
+
     function getNameChunkAt(Store storage self, uint ix, uint chunkIndex) constant returns (bytes32) {
         return self.ixToName[ix][chunkIndex];
     }
@@ -29,7 +33,7 @@ library NameStorageLib {
     function submitName(Store storage self, bytes32[] schemaNameParts) returns (bytes32, uint) {
         require(getNameIndex(self, schemaNameParts) == -1);
 
-        var newIx = self.nameCount;
+        var newIx = self.nameCount + 1; // index 0 should mean uninitialized
         self.nameCount += 1;
 
         self.ixToName[newIx] = schemaNameParts;

@@ -1,57 +1,173 @@
 var ClaimRegistry = artifacts.require("./ClaimRegistry.sol");
+var NameStorageFacade = artifacts.require("./NameStorageFacade.sol");
+var KeyProofs = artifacts.require("./KeyProofs.sol");
 var Web3Utils = require('web3-utils');
+
+let TYPE_TIX = 0;
+let ATTR_TIX = 1;
+let URL_TIX = 2;
+
+// TODO: deduplicate from keyproofs.js
+var prepareMetaProof = function(signatureHexString, unmodifiedHash) {
+  let r = '0x' + signatureHexString.slice(2, 66) // 64
+  let s = '0x' + signatureHexString.slice(66, 130) // 64
+  var v = web3.toDecimal('0x' + signatureHexString.slice(130, 132)) 
+
+  var sanitizedHash = unmodifiedHash;
+  
+  let isTestRpc = true;
+  
+  // If smart contract does not add prefix and we sign via Geth's eth_sign, 
+  // then we need to add the prefix.
+  //
+  // Currently the Smart Contract will add it, so it is set to false.
+  let addPrefix = !isTestRpc; // testRPC does not add the prefix when signing
+  if (addPrefix) {
+    sanitizedHash = Web3Utils.soliditySha3(web3.fromAscii("\u0019Ethereum Signed Message:\n32"), unmodifiedHash);
+  }
+
+  if (isTestRpc) {
+    // TestRPC expects V offset by 27
+    v += 27;
+  }
+
+  return {r: r, s: s, v: v, hash: sanitizedHash};
+}
+var metaProofFromRequestTransaction = function (requestProofTx, signAccount) {
+  assert.equal(requestProofTx.logs.length > 0, true, "Expecting at least 1 log from requestProofTx");
+  
+  var challengeUuid = requestProofTx.logs[0].args["uuid"];
+  var challengeValidator = requestProofTx.logs[0].args["validator"];
+  var challengeTimestamp = requestProofTx.logs[0].args["timestamp"].toNumber();
+  var sigHashHexString = Web3Utils.soliditySha3(challengeUuid, challengeTimestamp, challengeValidator);
+  let signatureHexString = web3.eth.sign(signAccount, sigHashHexString);
+
+  return prepareMetaProof(signatureHexString, sigHashHexString);
+}
 
 contract('ClaimRegistry', function(accounts) {
   
+  var claimRegistry;
+  var keyProofs;
+  var names;
+
+  beforeEach(function() {
+    return ClaimRegistry.new(keyProofs.address, names.address).then(instance => claimRegistry = instance);
+  });
+
+  before(async function() {
+    names = await NameStorageFacade.deployed();
+    keyProofs = await KeyProofs.deployed();
+    
+    await names.submitName(TYPE_TIX, [web3.fromAscii("type1")]);
+    await names.submitName(TYPE_TIX, [web3.fromAscii("type2")]);
+    await names.submitName(TYPE_TIX, [web3.fromAscii("type3")]);
+
+    await names.submitName(ATTR_TIX, [web3.fromAscii("attr1")]);
+    await names.submitName(ATTR_TIX, [web3.fromAscii("attr2")]);
+    await names.submitName(ATTR_TIX, [web3.fromAscii("attr3")]);
+
+    await names.submitName(URL_TIX, [web3.fromAscii("url1")]);
+    await names.submitName(URL_TIX, [web3.fromAscii("url2")]);
+    await names.submitName(URL_TIX, [web3.fromAscii("url3")]);
+  });
   
+  it("does not allow submitting unregistered type claim", async function() {
+    var threw = false;
+    await claimRegistry.submitClaim(accounts[0], 0, 1, 1).catch(_ => threw = true);
 
-  // it("lets submit a claim and query the subject", async function() {
-  //   let meta = await ClaimRegistry.deployed();
-  //   let schemaNameParts = [web3.fromAscii("http://test/stuff")];
-  //   let claimNameParts = [web3.fromAscii("claimName")];
-  //   let urlParts = [web3.fromAscii("00000000000000000000000000000000"), 
-  //                   web3.fromAscii("11111111111111111111111111111111")];
+    assert.equal(threw, true);
+  });
+
+  it("does not allow submitting unregistered attr claim", async function() {
+    var threw = false;
+    await claimRegistry.submitClaim(accounts[0], 1, 0, 1).catch(_ => threw = true);
+
+    assert.equal(threw, true);
+  });
+
+  it("does not allow submitting unregistered url value", async function() {
+    var threw = false;
+    await claimRegistry.submitClaim(accounts[0], 1, 1, 0).catch(_ => threw = true);
+
+    assert.equal(threw, true);
+  });
+
+  it("allows submitting claims with registered type/attr/url", async function() {
+    await claimRegistry.submitClaim(accounts[0], 1, 1, 1);
+  });
+
+  it("allows enumerating types for a subject", async function () {
+    await claimRegistry.submitClaim(accounts[0], 1, 1, 1);
+    await claimRegistry.submitClaim(accounts[0], 2, 1, 1);
+
+    let count = await claimRegistry.getSubjectTypeCount.call(accounts[0]);
+    assert.equal(count, 2);
+  });
+
+  it("allows enumerating attributes per-type for a subject", async function () {
+    await claimRegistry.submitClaim(accounts[0], 1, 1, 1);
+    await claimRegistry.submitClaim(accounts[0], 1, 2, 1);
+    await claimRegistry.submitClaim(accounts[0], 2, 1, 1);
+
+    // TODO: throws because acc1 is not validator for acc0
+    // await claimRegistry.submitClaim(accounts[0], 2, 1, 1, {from: accounts[1]});  // duplicate attr from diff validator, should not increase count
+
+    // type 1 -> 2 attributes; type 2 -> 1 attributes;
+
+    let count1 = await claimRegistry.getSubjectTypeAttrCount.call(accounts[0], 1);
+    let count2 = await claimRegistry.getSubjectTypeAttrCount.call(accounts[0], 2);
+
+    assert.equal(count1, 2);
+    assert.equal(count2, 1);
+  });
+
+  it("allows getting type for a subject with given index", async function () {
+    let typeIx = 2;
+    await claimRegistry.submitClaim(accounts[0], typeIx, 1, 1);
     
-  //   var result = (await meta.submitSchemaName(schemaNameParts));
-  //   let schemaNameIx = result.logs[0].args["ix"];
+    let actualTypeIx = await claimRegistry.getSubjectTypeAt.call(accounts[0], 0);
+    assert.equal(actualTypeIx, typeIx);
+  });
+
+  it("allows getting type attr for a subject with given index", async function () {
+    let typeIx = 2;
     
-  //   result = (await meta.submitClaimName(claimNameParts));
-  //   let claimNameIx = result.logs[0].args["ix"];
-
-  //   result = await meta.submitClaim(accounts[0], schemaNameIx, claimNameIx, urlParts, {from: accounts[1]});
+    await claimRegistry.submitClaim(accounts[0], typeIx, 1, 1);
+    await claimRegistry.submitClaim(accounts[0], typeIx, 2, 1);
     
-  //   // verify the event
-  //   assert.equal(accounts[0], result.logs[0].args["subject"]);
-  //   assert.equal(schemaNameIx, result.logs[0].args["schemaIx"].toNumber());
-  //   assert.equal(claimNameIx, result.logs[0].args["claimIx"].toNumber());
-  //   assert.equal(Web3Utils.soliditySha3(web3.fromAscii("0000000000000000000000000000000011111111111111111111111111111111")), 
-  //     result.logs[0].args["urlHash"]);
+    let expected1 = await claimRegistry.getSubjectTypeAttrAt.call(accounts[0], typeIx, 0);
+    let expected2 = await claimRegistry.getSubjectTypeAttrAt.call(accounts[0], typeIx, 1);
+    assert.equal(expected1.toNumber(), 1);
+    assert.equal(expected2.toNumber(), 2);
+  });
 
-  //   // query the subject
-  //   result = await meta.getSubjectClaimSetSize.call(accounts[0], schemaNameIx, claimNameIx);
-  //   assert.equal(result, 1);
+  it("does not allows submitting claims by non-validator, non-self address", async function() {
+    let threw = false;
 
-  //   // chunk 0 of the claim
-  //   result = await meta.getSubjectClaimSetEntryChunk.call(accounts[0], schemaNameIx, claimNameIx, 0, 0);
-  //   assert.equal(result[0], accounts[1], "Claim issuer is not correct");
-  //   assert.equal(result[1], web3.fromAscii("00000000000000000000000000000000"));
+    await claimRegistry.submitClaim(accounts[0], 1, 1, 1, {from: accounts[1]}).catch(_ => threw = true);
 
-  //   // chunk 1 of the claim
-  //   result = await meta.getSubjectClaimSetEntryChunk.call(accounts[0], schemaNameIx, claimNameIx, 0, 1);
-  //   assert.equal(result[0], accounts[1], "Claim issuer is not correct");
-  //   assert.equal(result[1], web3.fromAscii("11111111111111111111111111111111"));
+    assert.equal(threw, true);
+  });
 
-  //   // schema metadata
-  //   result = await meta.getSubjectSchemaCount.call(accounts[0]);
-  //   assert.equal(result, 1);
-  //   result = await meta.getSubjectSchemaAt.call(accounts[0], 0);
-  //   assert.equal(result.toNumber(), schemaNameIx);
+  it("allows submitting claims by validator, non-self address (seal > 0)", async function() {
+    var uuid = "0x9999999c66725ab3d9954942343ae5b9"; 
 
-  //   // claim metadata
-  //   result = await meta.getSubjectSchemaClaimCount.call(accounts[0], schemaNameIx);
-  //   assert.equal(result, 1);
-  //   result = await meta.getSubjectSchemaClaimAt.call(accounts[0], schemaNameIx, 0);
-  //   assert.equal(result.toNumber(), claimNameIx);
-  // });
+    var subject = accounts[0];
+    var validator = accounts[1];
+    
+    let requestProofTx = await keyProofs.requestProof(uuid, {from: validator});
+    let metaProof = metaProofFromRequestTransaction(requestProofTx, subject);
+    let submitProofTxA = await keyProofs.submitProofEC(uuid, subject, 
+      metaProof.v, metaProof.hash, metaProof.r, metaProof.s, {from: subject});
 
+    await keyProofs.sealProof(uuid, 1, {from: validator});
+
+    let isSenderValidator = await keyProofs.isValidatedBy.call(subject, validator, {from: validator});
+    assert.equal(isSenderValidator, true);
+
+    // Should not throw!
+    await claimRegistry.submitClaim(subject, 1, 1, 1, {from: validator});
+  });
+  
 });

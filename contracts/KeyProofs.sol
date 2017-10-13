@@ -50,6 +50,10 @@ contract KeyProofs {
         return (challengesV1[uuid].validatorAddr, challengesV1[uuid].timestamp);
     }
 
+    function isValidatedBy(address subject, address validator) constant returns(bool) {
+        return sealsV1[subject].validatorToStorageLevel[validator] != 0;
+    }
+
     function sealProof(bytes32 uuid, uint keyStorageLevel) {
         ChallengeV1 memory challenge = challengesV1[uuid];
 
