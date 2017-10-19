@@ -1,14 +1,24 @@
 # KYC Exchange Smart Contracts
 
-## Accessing ABI for specific version
+## Accessing ABI for a specific version
 
-    # Get latest version
+    # Get the latest version
     VERSION="$(curl https://raw.githubusercontent.com/notakey-kyc/eth-contracts/master/VERSION)"
     echo "Version: $VERSION"
 
-    # Get ABI for specific contract
+    # Get the ABI for specific contract
     CONTRACT_NAME="ClaimRegistry"
     wget "https://raw.githubusercontent.com/notakey-kyc/eth-contracts/master/abi_archive/$VERSION/${CONTRACT_NAME}.json"
+
+## Accessing addresses for a specific version
+
+    # Get the latest version
+    VERSION="$(curl https://raw.githubusercontent.com/notakey-kyc/eth-contracts/master/VERSION)"
+
+    # Set the network
+    NETWORK=rinkeby
+
+    wget "https://raw.githubusercontent.com/notakey-kyc/eth-contracts/master/address_archive/$VERSION/$NETWORK.json"
 
 ## rinkeby
 
