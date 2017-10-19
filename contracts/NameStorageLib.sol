@@ -21,9 +21,11 @@ library NameStorageLib {
 
     function getNameIndex(Store storage self, bytes32[] schemaNameParts) constant returns (int) {
         bytes memory schemaName = bytes32ArrayToBytes(schemaNameParts);
-        for (uint i = 0; i < self.nameCount; ++i) {
+
+        // start from 1, because 0 means uninitialized
+        for (uint i = 1; i <= self.nameCount; ++i) {
             bytes memory currentSchemaName = bytes32ArrayToBytes(self.ixToName[i]);
-            if (sha3(currentSchemaName) == sha3(schemaName)) {
+            if (keccak256(currentSchemaName) == keccak256(schemaName)) {
                 return int(i);
             }
         }
