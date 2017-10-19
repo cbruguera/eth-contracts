@@ -1,10 +1,10 @@
 {
   "addresses": {
-    "ClaimRegistry": "0xd78901bb5003004a489f58725e4d917f4e5b7ce5",
-    "Migrations": "0x089dac15c3a6631746862cd643fcfa0889b13938",
-    "NameStorageLib": "0x2b2527c1f2f6f5dced8423695c3b3801a2b3d8ca",
-    "NameStorageFacade": "0xffb43a7765f0d2ba6e25f41a01cced0e6ff7f7c2",
-    "KeyProofs": "0x1c68c6253e8da5693fb15926aa6e4c02777a996e"
+    "ClaimRegistry": "0xb7a29458abb2e420efbdd8caf9e10a37c5e00c0e",
+    "Migrations": "0x75d8d9ca7bf786478a04abf47c5f6b9c3d60e71e",
+    "NameStorageLib": "0x7317d7e264acc6bf069b46b7ec8dfa214b70d86b",
+    "NameStorageFacade": "0x16146f5a9ce64ab5d6b18b84376bfa6405b67c1c",
+    "KeyProofs": "0x1acc7b5b14bc99691a1190b71811981162c3d1a8"
   },
   "version": "0.1.3",
   "network": "development"
