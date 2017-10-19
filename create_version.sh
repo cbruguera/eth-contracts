@@ -80,6 +80,15 @@ if [ "$?" != "0" ]; then
   exit 1
 fi
 
+truffle compile
+mkdir -p "abi_archive/$NEWVERSION/"
+cp -rv build/contracts/* "abi_archive/$NEWVERSION"
+
+git add "abi_archive/$NEWVERSION"
+git commit "abi_archive/$NEWVERSION" -m "Prepared ABI files for v$NEWVERSION"
+
+ensure_git_clean
+
 echo $NEWVERSION > VERSION
 GIT_MESSAGE="Version bump from $OLDVERSION to $NEWVERSION"
 
