@@ -1,5 +1,4 @@
 var NameStorageFacade = artifacts.require("./NameStorageFacade.sol");
-var BaseNameStorage = artifacts.require("./BaseNameStorage.sol");
 var Web3Utils = require('web3-utils');
 
 contract('NameStorageFacade', function(accounts) {
