@@ -2,8 +2,9 @@ pragma solidity ^0.4.15;
 
 import './NameStorageFacade.sol';
 import './KeyProofs.sol';
+import './Destroyable.sol';
 
-contract ClaimRegistry {
+contract ClaimRegistry is Destroyable {
 
     // type indices
     uint constant TYPE_TIX = 0; 
@@ -78,10 +79,10 @@ contract ClaimRegistry {
         return subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].urls.length;
     }
 
-    function getSubjectClaimSetEntryChunk(address subject, uint typeNameIx, uint attrNameIx, uint attrIx) constant returns (address issuer, uint url)
+    function getSubjectClaimSetEntryAt(address subject, uint typeNameIx, uint attrNameIx, uint ix) constant returns (address issuer, uint url)
     {
-        issuer = subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].issuers[attrIx];
-        url = subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].urls[attrIx];
+        issuer = subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].issuers[ix];
+        url = subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].urls[ix];
     }
 
     function getKeyProofsAddress() constant returns(address) {

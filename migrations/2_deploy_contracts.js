@@ -14,6 +14,5 @@ module.exports = function(deployer) {
   deployer.deploy(KeyProofs);
   deployer.deploy(NameStorageFacade);
   
-  
   deployer.then(_ => deployer.deploy(ClaimRegistry, KeyProofs.address, NameStorageFacade.address));
 };

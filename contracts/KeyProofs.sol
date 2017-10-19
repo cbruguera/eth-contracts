@@ -1,6 +1,8 @@
 pragma solidity ^0.4.15;
 
-contract KeyProofs {
+import './Destroyable.sol';
+
+contract KeyProofs is Destroyable {
 
     event MadeChallengeV1(bytes32 indexed uuid, address validator, uint timestamp);
     
