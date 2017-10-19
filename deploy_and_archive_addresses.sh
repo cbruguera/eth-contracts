@@ -2,8 +2,18 @@
 
 set -o errexit
 
-CV="$(git describe)"
 NETWORK="${1:-development}"
+
+GITV="${2:-$CURR_GITV}"
+
+echo "==> Git information"
+echo "    deploying version: $GITV"
+
+echo "==> Resetting to $GITV"
+git checkout $GITV 
+
+
+CV="$(git describe)"
 
 echo "==> Verifying repository is clean"
 if [[ $(git status --porcelain) ]]; then
@@ -42,11 +52,15 @@ RESULT_JSON="$(echo "{\"network\": \"$NETWORK\"}" | jq ". + $RESULT_JSON")"
 RESULT_JSON="$(echo "{\"version\": \"$CV\"}" | jq ". + $RESULT_JSON")"
 RESULT_JSON="$(echo "{\"addresses\": $ADDR_JSON}" | jq ". + $RESULT_JSON")"
 
+
+echo "==> Returning to $CURR_GITV"
+git checkout -
+
 OUTPUT="address_archive/$CV/$NETWORK.json"
 echo "==> Archiving to $OUTPUT"
 mkdir -p "$(dirname $OUTPUT)"
 echo $RESULT_JSON | jq . > "$OUTPUT"
 
 git add "$OUTPUT"
-git commit "$OUTPUT" -m "Deployed v$NETWORK addresses for $NETWORK"
+git commit "$OUTPUT" -m "Deployed v$CV addresses for $NETWORK"
 git push
