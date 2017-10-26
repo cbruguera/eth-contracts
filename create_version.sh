@@ -1,5 +1,11 @@
 #!/bin/bash
 
+TESTRPC=$(ps ax | grep bin/testrpc | grep -v grep)
+if [ -z "$TESTRPC" ]; then
+  echo "ERROR: testrpc not running (please run it for tests)"
+  exit 1
+fi
+
 VERSION_BUMP_LEVEL=$1
 
 if [ -z "$(which truffle)" ]; then
