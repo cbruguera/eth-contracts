@@ -1,27 +1,20 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.15;
 
 contract AddressSet {
 
     mapping(address => address) accountToRegistrarMap;
 
-    event AddressAdded(address indexed addr);
+    event AddressAdded(address indexed addr, uint val);
     // event Attempt(uint a, uint b);
     
-    function AddressSet() {
-    }
-
     function addAddress(address addr) payable {
-        // need to fund the added address with at
-        // least the amount this tx cost
-        require (msg.value >= tx.gasprice * msg.gas);
-        
-        // // address must not have been registered already
+        require (msg.value == this.balance);
         require (accountToRegistrarMap[addr] == address(0));
 
         accountToRegistrarMap[addr] = msg.sender;
-        addr.transfer(msg.value); //x2 (50k)
+        addr.transfer(msg.value); 
 
-        AddressAdded(addr); // 2.2k
+        AddressAdded(addr, msg.value); 
     }
 
     function contains(address addr) returns (bool r) {
