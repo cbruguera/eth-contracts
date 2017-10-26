@@ -23,12 +23,6 @@ git checkout $GITV
 
 CV="$(git describe)" # Should match GITV
 
-echo "==> Verifying repository is clean"
-if [[ $(git status --porcelain) ]]; then
-  echo "ERROR: repository not in a clean state"
-  exit 1
-fi
-
 echo "==> Deploying version $CV to $NETWORK"
 echo "    removing old build artifacts"
 find build/contracts -type f -exec rm "{}" \;
