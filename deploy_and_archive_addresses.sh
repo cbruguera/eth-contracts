@@ -2,9 +2,17 @@
 
 set -o errexit
 
-NETWORK="${1:-development}"
+NETWORK="${1}"
+if [ -z "$NETWORK" ]; then
+  echo "Please pass network name/id as the first parameter"
+  exit 1
+fi
 
-GITV="${2:-$CURR_GITV}"
+GITV="${2}"
+if [ -z "$GITV" ]; then
+  echo "Please pass version tag as the second parameter"
+  exit 1
+fi
 
 echo "==> Git information"
 echo "    deploying version: $GITV"
@@ -18,7 +26,7 @@ CV="$(git describe)"
 echo "==> Verifying repository is clean"
 if [[ $(git status --porcelain) ]]; then
   echo "ERROR: repository not in a clean state"
-  #exit 1
+  exit 1
 fi
 
 echo "==> Deleting old artifacts"
@@ -53,7 +61,7 @@ RESULT_JSON="$(echo "{\"version\": \"$CV\"}" | jq ". + $RESULT_JSON")"
 RESULT_JSON="$(echo "{\"addresses\": $ADDR_JSON}" | jq ". + $RESULT_JSON")"
 
 
-echo "==> Returning to $CURR_GITV"
+echo "==> Returning to previous git state"
 git checkout -
 
 OUTPUT="address_archive/$CV/$NETWORK.json"
