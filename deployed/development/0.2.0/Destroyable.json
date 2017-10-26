@@ -1,0 +1,22 @@
+{
+  "contract_name": "Destroyable",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "destroy",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "payable": false,
+      "type": "constructor"
+    }
+  ],
+  "unlinked_binary": "0x6060604052341561000f57600080fd5b5b60008054600160a060020a03191633600160a060020a03161790555b5b60be8061003b6000396000f300606060405263ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166383197ef08114603c575b600080fd5b3415604657600080fd5b604c604e565b005b6000543373ffffffffffffffffffffffffffffffffffffffff908116911614607557600080fd5b60005473ffffffffffffffffffffffffffffffffffffffff16ff5b5600a165627a7a7230582013f9b6a65343a7af47bdd9395b94cf33f4a5c51cf3c696ead4601476f88d26b80029",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1509027859649
+}
