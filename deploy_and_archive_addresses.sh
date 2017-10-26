@@ -26,7 +26,7 @@ CV="$(git describe)" # Should match GITV
 echo "==> Verifying repository is clean"
 if [[ $(git status --porcelain) ]]; then
   echo "ERROR: repository not in a clean state"
-  #exit 1
+  exit 1
 fi
 
 echo "==> Deploying version $CV to $NETWORK"
@@ -73,4 +73,4 @@ cp -rv build/contracts/* "$NETWORKDIR/$CV"
 
 git add "$NETWORKDIR"
 git commit "$NETWORKDIR" -m "Deployed v$CV addresses for $NETWORK"
-# git push
+git push
