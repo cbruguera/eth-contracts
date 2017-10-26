@@ -101,3 +101,7 @@ git push
 
 git tag -a "$NEWVERSION" -m "$GIT_MESSAGE"
 git push --tags
+
+echo ""
+echo "Now run ./deploy_and_archive_addresses.sh"
+echo ""
