@@ -47,7 +47,8 @@ contract KeyProofs is Destroyable {
     mapping (address => SealSetV1) sealsV1;
 
     function getChallenge(bytes32 uuid) constant returns(address validatorAddr, uint timestamp) {
-        assert(challengesV1[uuid].timestamp != 0); 
+        assert(challengesV1[uuid].timestamp != 0); // challenge has been made
+        assert(challengesV1[uuid].response.responderAddr == address(0x0)); // but it has no response yet
 
         return (challengesV1[uuid].validatorAddr, challengesV1[uuid].timestamp);
     }
@@ -91,7 +92,7 @@ contract KeyProofs is Destroyable {
     function getSignerAndSignatureInput(bytes32 uuid) constant returns(address, bytes32) {
         ChallengeV1 memory challenge = challengesV1[uuid];
 
-        assert(challenge.validatorAddr == msg.sender);
+        require(challenge.validatorAddr == msg.sender);
         assert(challenge.response.signatureVerified);
 
         return (challenge.response.responderAddr, challenge.response.hash);
