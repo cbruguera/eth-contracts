@@ -1,5 +1,17 @@
 # KYC Exchange Smart Contracts
 
+## Test Reporter
+
+See: https://github.com/cgewecke/eth-gas-reporter
+
+    npm install -g eth-gas-reporter
+
+and add to truffle.js
+
+    mocha: {
+        reporter: 'eth-gas-reporter'
+    }
+
 ## Accessing ABI for a specific version
 
     # Get the latest version

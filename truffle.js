@@ -12,5 +12,8 @@ module.exports = {
       network_id: 4,
       gas: 4612388 // Gas limit used for deploys
     }
+  },
+  mocha: {
+      reporter: 'eth-gas-reporter'
   }
 };
