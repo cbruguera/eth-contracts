@@ -1,0 +1,12 @@
+{
+  "addresses": {
+    "ClaimRegistry": "0x6cf72cde613a2f3fbb98a107ecb99f0df07f2201",
+    "Migrations": "0x3ea501e7484379de6215f22b144bc527552be772",
+    "NameStorageLib": "0xc2146018faa82aa99e1258f537f5e3f977b8528b",
+    "AddressSet": "0xe904f550ebde97e85dcb0ce7d5b604bc398d9df7",
+    "NameStorageFacade": "0x0fc7849ed9a73d48faff9f0e9894d0ead37013f3",
+    "KeyProofs": "0x2dcdbfcc7c72b6c48d44f5642e40f166a7b1ccc0"
+  },
+  "version": "0.2.1",
+  "network": "rinkeby"
+}
