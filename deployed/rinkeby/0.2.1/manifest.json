@@ -1,11 +1,11 @@
 {
   "addresses": {
-    "ClaimRegistry": "0x6cf72cde613a2f3fbb98a107ecb99f0df07f2201",
-    "Migrations": "0x3ea501e7484379de6215f22b144bc527552be772",
-    "NameStorageLib": "0xc2146018faa82aa99e1258f537f5e3f977b8528b",
-    "AddressSet": "0xe904f550ebde97e85dcb0ce7d5b604bc398d9df7",
-    "NameStorageFacade": "0x0fc7849ed9a73d48faff9f0e9894d0ead37013f3",
-    "KeyProofs": "0x2dcdbfcc7c72b6c48d44f5642e40f166a7b1ccc0"
+    "ClaimRegistry": "0x55cad0ef58fc053adf791a1754ce35a7ae9ff062",
+    "Migrations": "0x09d83256f78abcac34dc5d51f2b291f49edff8fc",
+    "NameStorageLib": "0x4bb6dadeabac6295ec5561e99b1140ff451ee2de",
+    "AddressSet": "0x68e1da7787d0384b359a57c177af1f1a4267836c",
+    "NameStorageFacade": "0x2df119fb73b540e669d89ee79c0c049182b4869b",
+    "KeyProofs": "0x59afef776e032c013fd3a8f7656a18c7b97800a6"
   },
   "version": "0.2.1",
   "network": "rinkeby"
