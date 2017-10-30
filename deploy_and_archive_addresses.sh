@@ -2,6 +2,13 @@
 
 set -o errexit
 
+TESTRPC=$(ps ax | grep bin/testrpc | grep -v grep || true)
+if [ ! -z "$TESTRPC" ]; then
+  echo "ERROR: testrpc is running (please close it!)"
+  exit 1
+fi
+
+
 NETWORK="${1}"
 if [ -z "$NETWORK" ]; then
   echo "Please pass network name/id as the first parameter"
