@@ -1,5 +1,10 @@
 # KYC Exchange Smart Contracts
 
+## Dependencies for devresolver
+
+    brew tap iveney/mocha
+    brew install realpath jq
+
 ## Test Reporter
 
 See: https://github.com/cgewecke/eth-gas-reporter
