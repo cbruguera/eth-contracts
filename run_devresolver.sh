@@ -1,5 +1,18 @@
 #!/bin/bash
 
+RP="$(which realpath)"
+JQ="$(which jq)"
+
+if [ -z "$RP" ]; then
+  echo "ERROR: install realpath"
+  exit 1
+fi
+
+if [ -z "$JQ" ]; then
+  echo "ERROR: install jq"
+  exit 1
+fi
+
 VERSION=dev
 NETWORK=development
 NETWORKDIR="deployed/$NETWORK"
