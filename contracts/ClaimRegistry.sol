@@ -31,7 +31,7 @@ contract ClaimRegistry is Destroyable {
     mapping (address => mapping(uint => uint[])) subjectTypeClaimIndexes; 
     mapping (address => uint[]) subjectTypeIndexes;
 
-    function submitClaim(address subject, uint typeIx, uint attrIx, uint urlIx) {
+    function submitClaim(address subject, uint typeIx, uint attrIx, uint urlIx) public {
         var isSelf = (msg.sender == subject);
         var isValidator = KeyProofs(_keyProofsAddr).isValidatedBy(subject, msg.sender);
 
