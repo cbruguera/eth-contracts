@@ -11,10 +11,13 @@ contract NotakeyVerifierV1 {
     address claimRegistryAddr;
     address trustedIssuerAddr;
 
-    uint constant USA_BLACKLIST = 1;
-    uint constant CHINA_BLACKLIST = 2;
-    uint constant USA_CHINA_BLACKLIST = USA_BLACKLIST | CHINA_BLACKLIST;
-
+    uint constant USA = 883423532389192164791648750371459257913741948437809479060803100646309888;                
+        // USA is 240nd; blacklist: 1 << (240-1)
+    uint constant CHINA = 8796093022208;
+        // China is 44th; blacklist: 1 << (44-1)
+    uint constant SOUTH_KOREA = 83076749736557242056487941267521536;
+        // SK is 117th; blacklist: 1 << (117-1)
+    
     function NotakeyVerifierV1(address _trustedIssuerAddr, address _claimRegistryAddr) {
         claimRegistryAddr = _claimRegistryAddr;
         trustedIssuerAddr  = _trustedIssuerAddr;
@@ -27,7 +30,11 @@ contract NotakeyVerifierV1 {
         _;
     }
 
-    function _preventedByNationalityBlacklist(address subject, uint256 nationalityBlacklist) constant returns (bool)
+    function isVerified(address subject, uint256 nationalityBlacklist) public constant onlyVerifiedSenders(subject, nationalityBlacklist) returns (bool) {
+        return true;
+    }
+
+    function _preventedByNationalityBlacklist(address subject, uint256 nationalityBlacklist) internal constant returns (bool)
     {
         var claimRegistry = ClaimRegistry(claimRegistryAddr);
         var claimCount = claimRegistry.getSubjectClaimSetSize(subject, ICO_CONTRIBUTOR_TYPE, NATIONALITY_INDEX);

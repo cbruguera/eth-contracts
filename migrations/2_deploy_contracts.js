@@ -4,6 +4,8 @@ var ClaimRegistry = artifacts.require("./ClaimRegistry.sol");
 var NameStorageLib = artifacts.require("./NameStorageLib.sol");
 var NameStorageFacade = artifacts.require("./NameStorageFacade.sol");
 var TestVerifier = artifacts.require("./TestVerifier.sol");
+var IcoPassToken = artifacts.require("./IcoPassToken.sol");
+var SecondPriceAuction = artifacts.require("./SecondPriceAuction.sol");
 
 module.exports = function(deployer) {
   deployer.deploy(NameStorageLib);
@@ -15,6 +17,32 @@ module.exports = function(deployer) {
   deployer.then(_ => deployer.deploy(ClaimRegistry, KeyProofs.address, NameStorageFacade.address));
   deployer.then(_ => deployer.deploy(TestVerifier, ClaimRegistry.address));
 
+  // idp.key
+  let treasuryAddress = "0xd46c9b407afa991c4c510ab5ebf8959ea7409c17";
+
+  // test.key
+  let adminAddress = "0x5F9508555c8bbD32CfF8aA59774f69AfDF66710E";
+
+  deployer.deploy(IcoPassToken, treasuryAddress).then(async _ => {
+    let tokenContract = await IcoPassToken.deployed();
+    let claimRegistry = await ClaimRegistry.deployed();
+    // console.log(tokenContract.address);
+    // console.log(tokenContract);
+    let totalSupply = 1.0 * (await tokenContract.INITIAL_SUPPLY()).toNumber();
+    let tokenDecimals = 1.0 * (await tokenContract.decimals()).toNumber();
+
+    let tokenCap = Math.ceil(0.4 * totalSupply / (Math.pow(10, tokenDecimals)))
+    
+    await deployer.deploy(SecondPriceAuction, 
+      claimRegistry.address, 
+      tokenContract.address, 
+      treasuryAddress,
+      adminAddress,
+      Math.floor(new Date() / 1000),  // start now
+      tokenCap
+    );  
+  });
+  
   deployer.then(async _ => {
     let nsf = await NameStorageFacade.deployed();
 
@@ -46,6 +74,10 @@ module.exports = function(deployer) {
       await nsf.submitName(1, encodedParts);
       console.log("Submitted attr " + attrName);
     });
+
+
+
+
 
     // test.key
     // 0x5F9508555c8bbD32CfF8aA59774f69AfDF66710E

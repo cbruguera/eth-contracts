@@ -4,6 +4,13 @@
 
     truffle@4.0.1
 
+If (after truffle up/downgrades) there are unexpected Web3 errors (e.g.
+invalid number of arguments passed to Solidity function, despite it being
+a read-property call), try:
+
+    rm -r build
+    truffle migrate --reset --compile-all
+
 ## Dependencies for the crowdsale and token contracts
 
     npm install zeppelin-solidity
