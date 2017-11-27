@@ -1,21 +1,19 @@
 //! Copyright Parity Technologies, 2017.
+//! (original version: https://github.com/paritytech/second-price-auction)
+//!
+//! Copyright Notakey Latvia SIA, 2017.
+//! Original version modified to verify contributors against Notakey 
+//! KYC smart contract.
+//!
 //! Released under the Apache Licence 2.
 
 pragma solidity ^0.4.17;
 
+import './NotakeyVerifierV1.sol';
+
 /// Stripped down ERC20 standard token interface.
 contract Token {
-	function transfer(address _to, uint256 _value) public returns (bool success);
-}
-
-// From Certifier.sol
-contract Certifier {
-	event Confirmed(address indexed who);
-	event Revoked(address indexed who);
-	function certified(address) public constant returns (bool);
-	function get(address, string) public constant returns (bytes32);
-	function getAddress(address, string) public constant returns (address);
-	function getUint(address, string) public constant returns (uint);
+  function transferFrom(address from, address to, uint256 value) public returns (bool);
 }
 
 /// Simple modified second price auction contract. Price starts high and monotonically decreases
@@ -48,7 +46,7 @@ contract SecondPriceAuction {
 	/// Simple constructor.
 	/// Token cap should take be in whole tokens, not smallest divisible units.
 	function SecondPriceAuction(
-		address _certifierContract,
+		address _notakeyClaimRegistry, 
 		address _tokenContract,
 		address _treasury,
 		address _admin,
@@ -57,7 +55,9 @@ contract SecondPriceAuction {
 	)
 		public
 	{
-		certifier = Certifier(_certifierContract);
+		// this contract must be created by the notakey claim issuer (sender)
+		verifier = new NotakeyVerifierV1(msg.sender, _notakeyClaimRegistry);
+
 		tokenContract = Token(_tokenContract);
 		treasury = _treasury;
 		admin = _admin;
@@ -153,7 +153,7 @@ contract SecondPriceAuction {
 		uint tokens = total / endPrice;
 		totalFinalised += total;
 		delete buyins[_who];
-		require (tokenContract.transfer(_who, tokens));
+		require (tokenContract.transferFrom(treasury, _who, tokens));
 
 		Finalised(_who, tokens);
 
@@ -203,7 +203,7 @@ contract SecondPriceAuction {
 
 	/// The current end time of the sale assuming that nobody else buys in.
 	function calculateEndTime() public constant returns (uint) {
-		var factor = tokenCap / DIVISOR * USDWEI;
+		var factor = tokenCap / DIVISOR * EURWEI;
 		return beginTime + 40000000 * factor / (totalAccounted + 5 * factor) - 5760;
 	}
 
@@ -211,7 +211,7 @@ contract SecondPriceAuction {
 	/// the highest price per indivisible token part that the buyer will pay. This doesn't
 	/// include the discount which may be available.
 	function currentPrice() public constant when_active returns (uint weiPerIndivisibleTokenPart) {
-		return (USDWEI * 40000000 / (now - beginTime + 5760) - USDWEI * 5) / DIVISOR;
+		return (EURWEI * 40000000 / (now - beginTime + 5760) - EURWEI * 5) / DIVISOR;
 	}
 
 	/// Returns the total indivisible token parts available for purchase right now.
@@ -297,7 +297,7 @@ contract SecondPriceAuction {
 	modifier only_eligible(address who, uint8 v, bytes32 r, bytes32 s) {
 		require (
 			ecrecover(STATEMENT_HASH, v, r, s) == who &&
-			certifier.certified(who) &&
+			verifier.isVerified(who, verifier.USA() | verifier.CHINA() | verifier.SOUTH_KOREA()) &&
 			isBasicAccount(who) &&
 			msg.value >= DUST_LIMIT
 		);
@@ -347,8 +347,8 @@ contract SecondPriceAuction {
 	/// The tokens contract.
 	Token public tokenContract;
 
-	/// The certifier.
-	Certifier public certifier;
+	/// The Notakey verifier contract.
+	NotakeyVerifierV1 public verifier;
 
 	/// The treasury address; where all the Ether goes.
 	address public treasury;
@@ -395,8 +395,8 @@ contract SecondPriceAuction {
 	/// Number of consecutive blocks where there must be no new interest before bonus ends.
 	uint constant public BONUS_LATCH = 2;
 
-	/// Number of Wei in one USD, constant.
-	uint constant public USDWEI = 3226 szabo;
+	/// Number of Wei in one EUR, constant.
+	uint constant public EURWEI = 2000 szabo;
 
 	/// Divisor of the token.
 	uint constant public DIVISOR = 1000;

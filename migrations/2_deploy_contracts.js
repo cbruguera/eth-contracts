@@ -74,15 +74,18 @@ module.exports = function(deployer) {
       await nsf.submitName(1, encodedParts);
       console.log("Submitted attr " + attrName);
     });
+  });
 
-
-
-
-
-    // test.key
-    // 0x5F9508555c8bbD32CfF8aA59774f69AfDF66710E
-
+  // Demo KYC attributes for idp.key
+  // THIS WILL NOT WORK FOR IDP -> TESTKEY
+  deployer.then(async _ => {
     
+    let claimRegistry = await ClaimRegistry.deployed();
+
+    await claimRegistry.submitClaim("0xd46c9b407afa991c4c510ab5ebf8959ea7409c17", 
+    6, 6 /*report bundle*/, 1);
+    await claimRegistry.submitClaim("0xd46c9b407afa991c4c510ab5ebf8959ea7409c17", 
+    6, 7 /*nationality*/, 1);
     
-  })
+  });
 };
