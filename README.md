@@ -1,5 +1,42 @@
 # KYC Exchange Smart Contracts
 
+## Interacting with the crowdsale in Truffle console
+
+    truffle console
+
+then
+
+    // USER WILL NOT BE ABLE TO SUBMIT UNLESS
+    // 'idp' ISSUES A SEAL + 2 CLAIMS FOR 'user'
+
+    // Variable setup
+    idp = web3.eth.accounts[0]
+    user = web3.eth.accounts[1]
+    SecondPriceAuction.deployed().then(inst => {crowdsale = inst} )
+    IcoPassToken.deployed().then(inst => {token = inst})
+
+    // Signing the statement
+    var statement = web3.fromAscii("Please take my Ether and try to build Polkadot.");
+    var signatureHexString = web3.eth.sign(user, statement);
+    var r = '0x' + signatureHexString.slice(2, 66) // 64
+    var s = '0x' + signatureHexString.slice(66, 130) // 64
+    var v = web3.toDecimal('0x' + signatureHexString.slice(130, 132)) 
+    
+    // THIS IS ONLY REQUIRED FOR TESTRPC
+    v += 27 
+    
+    // Now buy
+    crowdsale.buyin(v,r,s,{from:user, value: web3.toWei(1, "ether")})
+
+    // Get the crowdsale verifier
+    crowdsale.verifier().then(inst => vaddr = inst)
+    NotakeyVerifierV1.at(vaddr).then(inst => verifier = inst)
+
+    // Verify
+    verifier.isVerified(idp, verifier.USA() | verifier.CHINA() | verifier.SOUTH_KOREA()) 
+    verifier.isVerified(user, verifier.USA() | verifier.CHINA() | verifier.SOUTH_KOREA()) 
+
+
 ## Truffle version
 
     truffle@4.0.1
