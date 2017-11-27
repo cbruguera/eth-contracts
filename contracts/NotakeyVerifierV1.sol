@@ -4,21 +4,21 @@ import './ClaimRegistry.sol';
 
 contract NotakeyVerifierV1 {
 
-    uint constant ICO_CONTRIBUTOR_TYPE = 6;
-    uint constant REPORT_BUNDLE = 6;
-    uint constant NATIONALITY_INDEX = 7;
+    uint public constant ICO_CONTRIBUTOR_TYPE = 6;
+    uint public constant REPORT_BUNDLE = 6;
+    uint public constant NATIONALITY_INDEX = 7;
 
-    address claimRegistryAddr;
-    address trustedIssuerAddr;
+    address public claimRegistryAddr;
+    address public trustedIssuerAddr;
 
-    uint constant USA = 883423532389192164791648750371459257913741948437809479060803100646309888;                
+    uint public constant USA = 883423532389192164791648750371459257913741948437809479060803100646309888;                
         // USA is 240nd; blacklist: 1 << (240-1)
-    uint constant CHINA = 8796093022208;
+    uint public constant CHINA = 8796093022208;
         // China is 44th; blacklist: 1 << (44-1)
-    uint constant SOUTH_KOREA = 83076749736557242056487941267521536;
+    uint public constant SOUTH_KOREA = 83076749736557242056487941267521536;
         // SK is 117th; blacklist: 1 << (117-1)
     
-    function NotakeyVerifierV1(address _trustedIssuerAddr, address _claimRegistryAddr) {
+    function NotakeyVerifierV1(address _trustedIssuerAddr, address _claimRegistryAddr) public {
         claimRegistryAddr = _claimRegistryAddr;
         trustedIssuerAddr  = _trustedIssuerAddr;
     }
