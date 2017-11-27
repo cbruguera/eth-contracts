@@ -136,7 +136,7 @@ contract KeyProofs is Destroyable {
             // truffle tests sign using eth_sign of the backing node
             // so without this, tests need to be able to detect testrpc / geth somehow
             bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-            bytes32 prefixedHash = sha3(prefix, hash);
+            bytes32 prefixedHash = keccak256(prefix, hash);
             result = (ecrecover(prefixedHash, v, r, s) == p);
         }
 
