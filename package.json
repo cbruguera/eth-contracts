@@ -1,0 +1,25 @@
+{
+  "name": "notakey-kyc-eth-contracts",
+  "version": "1.0.0",
+  "description": "## Dependencies for the crowdsale and token contracts",
+  "main": "devresolver.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/notakey-kyc/eth-contracts.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/notakey-kyc/eth-contracts/issues"
+  },
+  "homepage": "https://github.com/notakey-kyc/eth-contracts#readme",
+  "dependencies": {
+    "zeppelin-solidity": "^1.4.0"
+  }
+}

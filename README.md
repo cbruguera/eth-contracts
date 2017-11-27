@@ -1,5 +1,13 @@
 # KYC Exchange Smart Contracts
 
+## Truffle version
+
+    truffle@4.0.1
+
+## Dependencies for the crowdsale and token contracts
+
+    npm install zeppelin-solidity
+
 ## Dependencies for devresolver
 
     brew tap iveney/mocha
