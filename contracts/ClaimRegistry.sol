@@ -44,7 +44,9 @@ contract ClaimRegistry is Destroyable {
         // type/attr/url exists
         require(NameStorageFacade(_nameStorageFacade).getNameCount(TYPE_TIX) >= typeIx);
         require(NameStorageFacade(_nameStorageFacade).getNameCount(ATTR_TIX) >= attrIx);
-        require(NameStorageFacade(_nameStorageFacade).getNameCount(URL_TIX) >= urlIx);
+        
+        // Allow non-existant value, so it can be interpreted as an integer not lookup URL
+        // require(NameStorageFacade(_nameStorageFacade).getNameCount(URL_TIX) >= urlIx);
 
         if (subjectToTypeToAttrToClaims[subject][typeIx][attrIx].isValid == false) {
             subjectToTypeToAttrToClaims[subject][typeIx][attrIx].isValid = true;
