@@ -4,13 +4,23 @@
 
 See: https://github.com/cgewecke/eth-gas-reporter
 
-    npm install -g eth-gas-reporter
+    cd /usr/local/lib/node_modules/truffle/node_modules/mocha
+    npm install eth-gas-reporter
 
 and add to truffle.js
 
     mocha: {
         reporter: 'eth-gas-reporter'
     }
+    
+## Web3 utils
+
+    Error: Cannot find module 'web3-utils'
+
+```
+cd /project/root/dir
+npm uninstall web3-utils
+```
 
 ## Accessing ABI for a specific version
 
