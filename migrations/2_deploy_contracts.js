@@ -1,4 +1,4 @@
-var KeyProofs = artifacts.require("./KeyProofs.sol");var KeyProofs = artifacts.require("./KeyProofs.sol");
+var KeyProofs = artifacts.require("./KeyProofs.sol");
 var AddressSet = artifacts.require("./AddressSet.sol");
 var ClaimRegistry = artifacts.require("./ClaimRegistry.sol");
 var NameStorageLib = artifacts.require("./NameStorageLib.sol");

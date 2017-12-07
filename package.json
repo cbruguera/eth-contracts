@@ -20,6 +20,12 @@
   },
   "homepage": "https://github.com/notakey-kyc/eth-contracts#readme",
   "dependencies": {
+    "ethereumjs-testrpc": "^6.0.3",
+    "solidity-coverage": "^0.4.2",
+    "truffle": "^4.0.1",
     "zeppelin-solidity": "^1.4.0"
+  },
+  "devDependencies": {
+    "eth-gas-reporter": "0.0.14"
   }
 }

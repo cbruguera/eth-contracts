@@ -1,5 +1,7 @@
 # KYC Exchange Smart Contracts
 
+**Use scripts/test.sh for testing!**
+
 ## Interacting with the crowdsale in Truffle console
 
     truffle console
@@ -61,8 +63,11 @@ a read-property call), try:
 
 See: https://github.com/cgewecke/eth-gas-reporter
 
-    cd /usr/local/lib/node_modules/truffle/node_modules/mocha
-    npm install eth-gas-reporter
+  // Truffle installed globally
+  npm install -g eth-gas-reporter
+ 
+  // Truffle installed locally (ProTip: This always works.)
+  npm install --save-dev eth-gas-reporter
 
 and add to truffle.js
 
