@@ -62,12 +62,12 @@ module.exports = function(deployer) {
 
     [
       "name",             // 1:1
-      "keyBlob",          // 2:1
+      "keyBlob",          // 2:1 // 
       "keyType",          // 3:1
-      "encryptionKey",    // 4:1
+      "encryptionKey",    // 4:1 // to encrypt data for this subject, we publish key here
       "passportPicture",  // 5:1
       "reportBundleV1",   // 6:1
-      "nationalityIndex"  // 7:1
+      "nationalityIndex" // 7:1
     ].forEach(async function( attrName) {
       let parts = attrName.match(/.{1,32}/g);
       let encodedParts = parts.map(x => web3.fromAscii(x));
