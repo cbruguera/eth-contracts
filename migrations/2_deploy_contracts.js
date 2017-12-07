@@ -6,10 +6,15 @@ var NameStorageFacade = artifacts.require("./NameStorageFacade.sol");
 var TestVerifier = artifacts.require("./TestVerifier.sol");
 var IcoPassToken = artifacts.require("./IcoPassToken.sol");
 var SecondPriceAuction = artifacts.require("./SecondPriceAuction.sol");
+var DoublyLinkedList = artifacts.require("./DoublyLinkedList.sol");
 
 module.exports = function(deployer) {
   deployer.deploy(NameStorageLib);
   deployer.link(NameStorageLib, NameStorageFacade);
+  
+  deployer.deploy(DoublyLinkedList);
+  deployer.link(DoublyLinkedList, IcoPassToken);
+  
   deployer.deploy(KeyProofs);
   deployer.deploy(NameStorageFacade);
   deployer.deploy(AddressSet);

@@ -1,6 +1,14 @@
 
 const assertRevert = require('./helpers/assertRevert');
 
+const BigNumber = web3.BigNumber;
+
+
+require('chai')
+  .use(require('chai-as-promised'))
+  .use(require('chai-bignumber')(BigNumber))
+  .should();
+
 var IcoPassToken = artifacts.require('./IcoPassToken.sol');
 
 contract('IcoPassToken', function (accounts) {
@@ -85,7 +93,63 @@ contract('IcoPassToken', function (accounts) {
   });
 
   describe('payment distribution among holders', function () {
-    // todo
+    it("should not accept payments with no value", async function() {
+      try {
+        await token.distributeAmongHolders({value: 0});
+        assert.fail('should have thrown before');
+      } catch (error) {
+        assertRevert(error);
+      }
+    })
+
+    it("should distribute value proportionally among contributors", async function() {
+        var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+        var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+        var preDividendBalance3 = await web3.eth.getBalance(accounts[3]);
+
+        await token.transfer(accounts[1], 1000000); // 10%
+        await token.transfer(accounts[2], 4000000); // 40%
+        await token.transfer(accounts[3], 5000000); // 50%
+
+        await token.distributeAmongHolders({value: 100});
+        
+        var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+        var postDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+        var postDividendBalance3 = await web3.eth.getBalance(accounts[3]);
+
+        preDividendBalance1.plus(10).should.be.bignumber.equal(postDividendBalance1);
+        preDividendBalance2.plus(40).should.be.bignumber.equal(postDividendBalance2);
+        preDividendBalance3.plus(50).should.be.bignumber.equal(postDividendBalance3);
+    })
+
+    it("should return to sender 1 wei when value can not be split exactly", async function() {
+      await token.transfer(accounts[1], 1100000); // 11%
+      await token.transfer(accounts[2], 4000000); // 40%
+      await token.transfer(accounts[3], 4900000); // 49%
+      
+      // calculate balances after transfers (b/c of the transfer fee)      
+      var preDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+      var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+      var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+      var preDividendBalance3 = await web3.eth.getBalance(accounts[3]);
+
+      let gasPrice = 100000000000; // fixed gas price for fee calculation
+
+      // 101 will be split into 11, 40 and 49. 1 wei is left over
+      let tx = await token.distributeAmongHolders({value: 101, gasPrice: gasPrice});
+      
+      let expectedFee = (tx.receipt.gasUsed * gasPrice); 
+      
+      var postDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+      var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+      var postDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+      var postDividendBalance3 = await web3.eth.getBalance(accounts[3]);
+
+      preDividendBalance1.plus(11).should.be.bignumber.equal(postDividendBalance1);
+      preDividendBalance2.plus(40).should.be.bignumber.equal(postDividendBalance2);
+      preDividendBalance3.plus(49).should.be.bignumber.equal(postDividendBalance3);
+      preDividendBalance0.minus(expectedFee).minus(100).should.be.bignumber.equal(postDividendBalance0);
+    })
   })
 
   describe('validating allowance updates to spender', function () {
@@ -99,10 +163,10 @@ contract('IcoPassToken', function (accounts) {
     it('should increase by 50 then decrease by 10', async function () {
       await token.increaseApproval(accounts[1], 5000000);
       let postIncrease = await token.allowance(accounts[0], accounts[1]);
-      assert.equal(preApproved.plus(5000000).toNumber(), postIncrease.toNumber());
+      preApproved.plus(5000000).should.be.bignumber.equal(postIncrease);
       await token.decreaseApproval(accounts[1], 1000000);
       let postDecrease = await token.allowance(accounts[0], accounts[1]);
-      assert.equal(postIncrease.minus(1000000).toNumber(), postDecrease.toNumber());
+      postIncrease.minus(1000000).should.be.bignumber.equal(postDecrease);
     });
   });
 
