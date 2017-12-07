@@ -1,7 +1,19 @@
 
 const assertRevert = require('./helpers/assertRevert');
+const secp256k1 = require('secp256k1');
+const crypto = require('crypto');
+const keccak = require('keccak');
 
 const BigNumber = web3.BigNumber;
+
+let randomAddress = function () {
+  let privKey = crypto.randomBytes(32)
+  let pubKey = secp256k1.publicKeyCreate(privKey)
+  var pubKeyBuffer = Buffer(keccak('keccak256').update(pubKey).digest())
+  
+  pubKeyBuffer = pubKeyBuffer.slice(12, 32);
+  return '0x' + pubKeyBuffer.toString('hex');
+}
 
 
 require('chai')
@@ -122,33 +134,30 @@ contract('IcoPassToken', function (accounts) {
         preDividendBalance3.plus(50).should.be.bignumber.equal(postDividendBalance3);
     })
 
-    it("should return to sender 1 wei when value can not be split exactly", async function() {
+    it("should have a transaction fee in the expected range", async function () {
+      let iterations = 50;
+      let tokenCount = (10000 / iterations)
+      for (var i = 0; i < iterations; ++i) {
+        await token.transfer(randomAddress(), tokenCount * 1000); 
+      }
+      let gasPrice = 1000000000; // fixed gas price for fee calculation
+      let tx = await token.distributeAmongHolders({value: 10000000, gasPrice: gasPrice});
+      let expectedFee = (tx.receipt.gasUsed * gasPrice); 
+      expectedFee.should.be.bignumber.lessThan(1800000000000000);
+    })
+
+    it("should fail value can not be split exactly", async function() {
       await token.transfer(accounts[1], 1100000); // 11%
       await token.transfer(accounts[2], 4000000); // 40%
       await token.transfer(accounts[3], 4900000); // 49%
       
-      // calculate balances after transfers (b/c of the transfer fee)      
-      var preDividendBalance0 = await web3.eth.getBalance(accounts[0]);
-      var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);
-      var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);
-      var preDividendBalance3 = await web3.eth.getBalance(accounts[3]);
-
-      let gasPrice = 100000000000; // fixed gas price for fee calculation
-
       // 101 will be split into 11, 40 and 49. 1 wei is left over
-      let tx = await token.distributeAmongHolders({value: 101, gasPrice: gasPrice});
-      
-      let expectedFee = (tx.receipt.gasUsed * gasPrice); 
-      
-      var postDividendBalance0 = await web3.eth.getBalance(accounts[0]);
-      var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);
-      var postDividendBalance2 = await web3.eth.getBalance(accounts[2]);
-      var postDividendBalance3 = await web3.eth.getBalance(accounts[3]);
-
-      preDividendBalance1.plus(11).should.be.bignumber.equal(postDividendBalance1);
-      preDividendBalance2.plus(40).should.be.bignumber.equal(postDividendBalance2);
-      preDividendBalance3.plus(49).should.be.bignumber.equal(postDividendBalance3);
-      preDividendBalance0.minus(expectedFee).minus(100).should.be.bignumber.equal(postDividendBalance0);
+      try {
+        await token.distributeAmongHolders({value: 101});
+        assert.fail('should have thrown before');
+      } catch (error) {
+        assertRevert(error);
+      }
     })
   })
 
