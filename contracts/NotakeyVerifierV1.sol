@@ -62,7 +62,7 @@ contract NotakeyVerifierV1 {
         return false;
     }   
 
-    function _hasIcoContributorType(address subject) constant returns (bool)
+    function _hasIcoContributorType(address subject) internal constant returns (bool)
     {
         var atLeastOneValidReport = false;
         var atLeastOneValidNationality = false;
