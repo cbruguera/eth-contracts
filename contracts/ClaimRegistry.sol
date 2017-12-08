@@ -14,17 +14,18 @@ contract ClaimRegistry is Destroyable {
     address _keyProofsAddr;
     address _nameStorageFacade;
 
+    event TerminatedLinkage(address indexed subject, address indexed linkedAddress, uint linkCount);
+    
+    event GotLinkage(address indexed subject, address indexed linkedAddress, bytes32 proofHash, uint linkCount);
+    
+    event GotClaim(address indexed subject, uint typeIx, uint attrIx, uint urlIx);
+
+
     function ClaimRegistry(address keyProofs, address nameStorageFacade) {
         _keyProofsAddr = keyProofs;
         _nameStorageFacade = nameStorageFacade;
-    }
-
-    event GotClaim(address indexed subject, uint typeIx, uint attrIx, uint urlIx);
-
-    //TODO check in clic if this is needed
-    event GotLinkage(address indexed subject, address indexed linkedAddress, bytes32 proofHash, uint linkageCount);
-    event TerminatedLinkage(address indexed subject, address indexed linkedAddress, uint linkageCount);
-
+    }   
+    
     struct ClaimSetV1 {
         uint[] urls;
         address[] issuers;
@@ -42,10 +43,10 @@ contract ClaimRegistry is Destroyable {
     //       subject            linked adderess => proof hash
     mapping (address => Linkages) subjectLinkages;
 
-    function getLinkageCount(address subject) public view returns(uint length) {
+    function getLinkageCount(address subject) public view returns(uint) {
         // var isSelf = (msg.sender == subject);
-
-       return  subjectLinkages[subject].linkCount;
+        var curCnt = subjectLinkages[subject].linkCount;
+        return curCnt;
     }
 
     function submitLinkage(address linkedAddress, bytes32 txHash) public returns(uint length) {
@@ -74,10 +75,8 @@ contract ClaimRegistry is Destroyable {
     }
 
     function terminateLinkage(address linkedAddress) public returns(uint length) {
-        // var isSelf = (msg.sender == subject);
-
-        // require(isSelf);
         address subject = msg.sender;
+
         bytes32 emptyVar;
         require(subjectLinkages[subject].linkHashMaps[linkedAddress] != emptyVar);
         
@@ -90,7 +89,6 @@ contract ClaimRegistry is Destroyable {
         TerminatedLinkage(subject, linkedAddress, curCnt);
 
         return curCnt;
-
     }
 
     function submitClaim(address subject, uint typeIx, uint attrIx, uint urlIx) public {
