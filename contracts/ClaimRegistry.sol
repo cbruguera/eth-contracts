@@ -48,10 +48,12 @@ contract ClaimRegistry is Destroyable {
        return  subjectLinkages[subject].linkCount;
     }
 
-    function submitLinkage(address subject, address linkedAddress, bytes32 txHash) public returns(uint length) {
-        var isSelf = (msg.sender == subject);
+    function submitLinkage(address linkedAddress, bytes32 txHash) public returns(uint length) {
+        // var isSelf = (msg.sender == subject);
 
-        require(isSelf);
+        // require(isSelf);
+        address subject = msg.sender;
+
         // uint8 v, bytes32 r, bytes32 s
         // bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         // bytes32 prefixedHash = keccak256(prefix, txHash);
@@ -71,11 +73,11 @@ contract ClaimRegistry is Destroyable {
         return curCnt;
     }
 
-    function terminateLinkage(address subject, address linkedAddress) public returns(uint length) {
-        var isSelf = (msg.sender == subject);
+    function terminateLinkage(address linkedAddress) public returns(uint length) {
+        // var isSelf = (msg.sender == subject);
 
-        require(isSelf);
-
+        // require(isSelf);
+        address subject = msg.sender;
         bytes32 emptyVar;
         require(subjectLinkages[subject].linkHashMaps[linkedAddress] != emptyVar);
         

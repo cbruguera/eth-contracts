@@ -94,7 +94,7 @@ contract('ClaimRegistry', function(accounts) {
     //     }
     // );    
 
-    await claimRegistry.submitLinkage(subject, toBeLinkedAddr, hash, {from: subject}).catch(_ => threw = true);
+    await claimRegistry.submitLinkage( toBeLinkedAddr, hash, {from: subject}).catch(_ => threw = true);
     assert.equal(threw, false);
   });
 
@@ -104,9 +104,9 @@ contract('ClaimRegistry', function(accounts) {
     var subject = accounts[0];
     var toBeLinkedAddr = accounts[1];
 
-    await claimRegistry.submitLinkage(subject, toBeLinkedAddr, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+    await claimRegistry.submitLinkage( toBeLinkedAddr, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
   
-    await claimRegistry.submitLinkage(subject, 0x9999999c66725ab3d9954942343ae5b9, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+    await claimRegistry.submitLinkage( 0x9999999c66725ab3d9954942343ae5b9, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
     // TODO this call never returns emitted event
     await claimRegistry.terminateLinkage(subject, toBeLinkedAddr, {from: subject}).catch(_ => threw = true);
     assert.equal(threw, false);
@@ -116,13 +116,26 @@ contract('ClaimRegistry', function(accounts) {
     var subject = accounts[0];
     var toBeLinkedAddr = accounts[1];
 
-    await claimRegistry.submitLinkage(subject, toBeLinkedAddr, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+    await claimRegistry.submitLinkage( toBeLinkedAddr, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject}).catch(_ => threw = true);
     // TODO count is not returned, test silently fails with no exception
+    assert.equal(threw, false);
 
     var lcount = await claimRegistry.getLinkageCount(subject);
     assert.equal(lcount.toNumber, 1, "Linkage count should be equal to 1");
   });
   
+  it("should not allow linking address twice", async function() {
+    var threw = false;
+    
+    var subject = accounts[0];
+    var toBeLinkedAddr = accounts[1];
+
+    await claimRegistry.submitLinkage( toBeLinkedAddr, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+    await claimRegistry.submitLinkage( toBeLinkedAddr, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject}).catch(_ => threw = true);
+        
+    assert.equal(threw, true);
+  });
+
   it("does not allow submitting unregistered type claim", async function() {
     var threw = false;
     await claimRegistry.submitClaim(accounts[0], 0, 1, 1).catch(_ => threw = true);
