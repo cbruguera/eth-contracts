@@ -14,17 +14,18 @@ contract ClaimRegistry is Destroyable {
     address _keyProofsAddr;
     address _nameStorageFacade;
 
+    event TerminatedLinkage(address indexed subject, address indexed linkedAddress, uint linkCount);
+    
+    event GotLinkage(address indexed subject, address indexed linkedAddress, bytes32 proofHash, uint linkCount);
+    
+    event GotClaim(address indexed subject, uint typeIx, uint attrIx, uint urlIx);
+
+
     function ClaimRegistry(address keyProofs, address nameStorageFacade) {
         _keyProofsAddr = keyProofs;
         _nameStorageFacade = nameStorageFacade;
-    }
-
-    event GotClaim(address indexed subject, uint typeIx, uint attrIx, uint urlIx);
-
-    //TODO check in clic if this is needed
-    event GotLinkage(address indexed subject, address indexed linkedAddress, bytes32 proofHash, uint linkageCount);
-    event TerminatedLinkage(address indexed subject, address indexed linkedAddress, uint linkageCount);
-
+    }   
+    
     struct ClaimSetV1 {
         uint[] urls;
         address[] issuers;
@@ -32,8 +33,8 @@ contract ClaimRegistry is Destroyable {
     }
 
     struct Linkages{
-        mapping (address => bytes32) linkHashMaps;
-        uint linkCount;
+        address[] linkedAddresses;
+        mapping (uint => bytes32) linkHashMaps;
     }
 
     mapping (address => mapping(uint => mapping(uint => ClaimSetV1))) subjectToTypeToAttrToClaims;
@@ -42,13 +43,44 @@ contract ClaimRegistry is Destroyable {
     //       subject            linked adderess => proof hash
     mapping (address => Linkages) subjectLinkages;
 
-    function getLinkageCount(address subject) public view returns(uint length) {
+    function getLinkageCount(address subject) public view returns(uint linkageCount) {
         // var isSelf = (msg.sender == subject);
-
-       return  subjectLinkages[subject].linkCount;
+        linkageCount = subjectLinkages[subject].linkedAddresses.length;
+        return linkageCount;
     }
 
-    function submitLinkage(address linkedAddress, bytes32 txHash) public returns(uint length) {
+    function getLinkageIndex(address subject, address linkedAddress) private view returns(int) {
+        for (uint i = 0 ; i < subjectLinkages[subject].linkedAddresses.length ; i++ ){
+            if(subjectLinkages[subject].linkedAddresses[i] == linkedAddress){
+                return int( i );
+            }
+            i++;
+        }
+
+        return -1;
+    }
+
+    function getLinkages(address subject) public view returns(address[] linkedAddresses) {
+        // var isSelf = (msg.sender == subject);
+        linkedAddresses = subjectLinkages[subject].linkedAddresses;
+    }
+
+    function getLinkagesWithProofs(address subject) public view returns( address[] memory addrLinks, bytes32[] memory proofHashes ) {
+        uint _arrLength = subjectLinkages[subject].linkedAddresses.length;
+        address[] memory _addrLinks = new address[](_arrLength);
+        bytes32[] memory _proofHashes = new bytes32[](_arrLength);
+
+        for (uint i = 0 ; i < subjectLinkages[subject].linkedAddresses.length ; i++ ){
+            _proofHashes[i] = subjectLinkages[subject].linkHashMaps[i];
+            _addrLinks[i] = subjectLinkages[subject].linkedAddresses[i];
+        }
+
+        return (_addrLinks , _proofHashes);
+    }
+
+
+
+    function submitLinkage(address linkedAddress, bytes32 txHash) public returns(uint linkageCount) {
         // var isSelf = (msg.sender == subject);
 
         // require(isSelf);
@@ -60,37 +92,45 @@ contract ClaimRegistry is Destroyable {
         // address signer = ecrecover(prefixedHash, v, r, s);
 
         // require(linkedAddress == signer);
-        bytes32 emptyVar;
-        require(subjectLinkages[subject].linkHashMaps[linkedAddress] == emptyVar);
 
-        uint curCnt = getLinkageCount(subject);
-        curCnt++;
+        require(getLinkageIndex(subject, linkedAddress) == -1);
 
-        subjectLinkages[subject].linkHashMaps[linkedAddress] = txHash;
-        subjectLinkages[subject].linkCount = curCnt;
+        linkageCount = getLinkageCount(subject);
+        
+        subjectLinkages[subject].linkedAddresses.push(linkedAddress);
+        subjectLinkages[subject].linkHashMaps[(linkageCount)] = txHash;
+        linkageCount++;
 
-        GotLinkage(subject, linkedAddress, txHash, curCnt);     
-        return curCnt;
+        GotLinkage(subject, linkedAddress, txHash, linkageCount);     
     }
 
-    function terminateLinkage(address linkedAddress) public returns(uint length) {
-        // var isSelf = (msg.sender == subject);
-
-        // require(isSelf);
+    function terminateLinkage(address linkedAddress) public returns(uint linkageCount) {
         address subject = msg.sender;
+
         bytes32 emptyVar;
-        require(subjectLinkages[subject].linkHashMaps[linkedAddress] != emptyVar);
+        require(getLinkageIndex(subject, linkedAddress) >= 0);
         
-        uint curCnt = getLinkageCount(subject);
+        linkageCount = getLinkageCount(subject);
         
-        subjectLinkages[subject].linkHashMaps[linkedAddress] = emptyVar;
-        curCnt--;
+        address[] memory newLinkages;
+        uint i = 0; 
+        uint delIndex = 0;
+        while (i < newLinkages.length){
+            if(newLinkages[i] == linkedAddress){
+                delIndex = i;
+                continue;
+            } 
+            newLinkages[i] = subjectLinkages[subject].linkedAddresses[i];
+            i++;
+        }
 
-        subjectLinkages[subject].linkCount = curCnt;
-        TerminatedLinkage(subject, linkedAddress, curCnt);
+        subjectLinkages[subject].linkedAddresses = newLinkages;
+        subjectLinkages[subject].linkHashMaps[delIndex] = emptyVar;
+        linkageCount--;
 
-        return curCnt;
+        TerminatedLinkage(subject, linkedAddress, linkageCount);
 
+        // return linkageCount;
     }
 
     function submitClaim(address subject, uint typeIx, uint attrIx, uint urlIx) public {
