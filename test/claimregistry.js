@@ -169,5 +169,7 @@ contract('ClaimRegistry', function(accounts) {
     // Should not throw!
     await claimRegistry.submitClaim(subject, 1, 1, 1, {from: validator});
   });
+
+  
   
 });
