@@ -15,7 +15,12 @@ contract IcoPassToken is StandardToken, DSMath {
   event UnaccountedFor(int256 valu);
   event Transferring(address recipient, uint transfer);
   event GotDividends(uint amt);
-  
+
+  event HolderAdded(address holder);
+  event HolderRemoved(address holder);
+  event HolderCount(uint count);
+  event Message(string yo);
+
   // using DoublyLinkedList for DoublyLinkedList.data;
   // DoublyLinkedList.data public list;
 
@@ -57,12 +62,14 @@ contract IcoPassToken is StandardToken, DSMath {
   function ensureHolderPurged(address holder) public {
     require(holder != 0x0);
 
-    uint ix = holderIndices[0x0];
+    uint ix = holderIndices[holder];
     if (ix == 0) { return; }
 
     delete holders[ix];
     holderIndices[holder] = 0;
     holderCount -= 1;
+
+    HolderRemoved(holder);
     
     // var it = list.find(holder);
     // if (list.iterate_valid(it))
@@ -76,6 +83,8 @@ contract IcoPassToken is StandardToken, DSMath {
     
     updateHolderRegistration(msg.sender);
     updateHolderRegistration(_to);
+
+    HolderCount(holderCount);
   }
 
   function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
@@ -86,6 +95,7 @@ contract IcoPassToken is StandardToken, DSMath {
   }
 
   function updateHolderRegistration(address _holder) internal {
+    ensureHolderPurged(_holder); // for test
     if (balances[_holder] > 0) { ensureHolderRegistered(_holder); }
     if (balances[_holder] <= 0) { ensureHolderPurged(_holder); }
   }
@@ -106,7 +116,7 @@ contract IcoPassToken is StandardToken, DSMath {
       if (ix == 0) { continue; }
 
       uint holderBalance = balances[holder];
-      
+
       uint holderShare = wdiv(holderBalance, INITIAL_SUPPLY);
       uint holderValue = wmul(msg.value, holderShare);
       accountedFor += holderValue;
@@ -123,7 +133,7 @@ contract IcoPassToken is StandardToken, DSMath {
     //     uint holderShare = wdiv(holderBalance, INITIAL_SUPPLY);
     //     uint holderValue = wmul(msg.value, holderShare);
     //     accountedFor += holderValue;
-    //     // holder.transfer(holderValue);
+    //     holder.transfer(holderValue);
         
     //     it = list.iterate_next(it);
     // }
