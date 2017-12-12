@@ -44,17 +44,34 @@ contract('ClaimRegistry', function(accounts) {
     assert.equal(threw, true);
   });
 
+  it("allows you to query linked address count", async function() {
+    var subject = accounts[0];
+    var toBeLinkedAddr = accounts[1];
+
+    await claimRegistry.submitLinkage( toBeLinkedAddr, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+    await claimRegistry.submitLinkage( 0x6AFbA91610bb76c1687e4C53825f86CE06497003, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+
+    var lcount = await claimRegistry.getLinkageCount.call(subject);
+    // var lcount = await claimRegistry.getLinkageCount(subject);
+    // console.log(lcount);
+    assert.equal(lcount.valueOf(), 2, "Linkage count should be equal to 2");
+  });
+
   it("allows you to query linked addresses", async function() {
     var subject = accounts[0];
     var toBeLinkedAddr = accounts[1];
 
     await claimRegistry.submitLinkage( toBeLinkedAddr, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+    await claimRegistry.submitLinkage( 0x6AFbA91610bb76c1687e4C53825f86CE06497003, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+    
 
-    var lcount = await claimRegistry.getLinkageCount.call(subject);
-    // var lcount = await claimRegistry.getLinkageCount(subject);
-    // console.log(lcount);
-    assert.equal(lcount.valueOf(), 1, "Linkage count should be equal to 1");
+    var addrs = await claimRegistry.getLinkages.call(subject);
+   
+    assert.equal(addrs.constructor === Array, true);
+    assert.equal(addrs.length === 2, true);
+    
   });
+
   
   it("should not allow linking address twice", async function() {
     var threw = false;
