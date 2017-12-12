@@ -57,7 +57,7 @@ contract('ClaimRegistry', function(accounts) {
     assert.equal(lcount.valueOf(), 2, "Linkage count should be equal to 2");
   });
 
-  it("allows you to query linked addresses", async function() {
+  it("allows anyone to query linked addresses", async function() {
     var subject = accounts[0];
     var toBeLinkedAddr = accounts[1];
 
@@ -66,13 +66,30 @@ contract('ClaimRegistry', function(accounts) {
     
 
     var addrs = await claimRegistry.getLinkages.call(subject);
-   
+    // console.log(addrs);
+
     assert.equal(addrs.constructor === Array, true);
     assert.equal(addrs.length === 2, true);
     
   });
 
-  
+  it("allows anyone to query linked addresses proofs", async function() {
+    var subject = accounts[0];
+    var toBeLinkedAddr = accounts[1];
+
+    await claimRegistry.submitLinkage( toBeLinkedAddr, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+    await claimRegistry.submitLinkage( 0x6AFbA91610bb76c1687e4C53825f86CE06497003, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject});
+    
+
+    var addrs = await claimRegistry.getLinkagesWithProofs.call(subject);
+    // console.log(addrs);
+
+    assert.equal(addrs[0].constructor === Array, true);
+    assert.equal(addrs[1].constructor === Array, true);
+    assert.equal(addrs[0].length === addrs[1].length, true);
+    
+  });
+
   it("should not allow linking address twice", async function() {
     var threw = false;
     

@@ -34,8 +34,7 @@ contract ClaimRegistry is Destroyable {
 
     struct Linkages{
         address[] linkedAddresses;
-        mapping (address => bytes32) linkHashMaps;
-        uint linkCount;
+        mapping (uint => bytes32) linkHashMaps;
     }
 
     mapping (address => mapping(uint => mapping(uint => ClaimSetV1))) subjectToTypeToAttrToClaims;
@@ -46,14 +45,40 @@ contract ClaimRegistry is Destroyable {
 
     function getLinkageCount(address subject) public view returns(uint linkageCount) {
         // var isSelf = (msg.sender == subject);
-        linkageCount = subjectLinkages[subject].linkCount;
+        linkageCount = subjectLinkages[subject].linkedAddresses.length;
         return linkageCount;
+    }
+
+    function getLinkageIndex(address subject, address linkedAddress) private view returns(int) {
+        for (uint i = 0 ; i < subjectLinkages[subject].linkedAddresses.length ; i++ ){
+            if(subjectLinkages[subject].linkedAddresses[i] == linkedAddress){
+                return int( i );
+            }
+            i++;
+        }
+
+        return -1;
     }
 
     function getLinkages(address subject) public view returns(address[] linkedAddresses) {
         // var isSelf = (msg.sender == subject);
         linkedAddresses = subjectLinkages[subject].linkedAddresses;
     }
+
+    function getLinkagesWithProofs(address subject) public view returns( address[] memory addrLinks, bytes32[] memory proofHashes ) {
+        uint _arrLength = subjectLinkages[subject].linkedAddresses.length;
+        address[] memory _addrLinks = new address[](_arrLength);
+        bytes32[] memory _proofHashes = new bytes32[](_arrLength);
+
+        for (uint i = 0 ; i < subjectLinkages[subject].linkedAddresses.length ; i++ ){
+            _proofHashes[i] = subjectLinkages[subject].linkHashMaps[i];
+            _addrLinks[i] = subjectLinkages[subject].linkedAddresses[i];
+        }
+
+        return (_addrLinks , _proofHashes);
+    }
+
+
 
     function submitLinkage(address linkedAddress, bytes32 txHash) public returns(uint linkageCount) {
         // var isSelf = (msg.sender == subject);
@@ -67,32 +92,32 @@ contract ClaimRegistry is Destroyable {
         // address signer = ecrecover(prefixedHash, v, r, s);
 
         // require(linkedAddress == signer);
-        bytes32 emptyVar;
-        require(subjectLinkages[subject].linkHashMaps[linkedAddress] == emptyVar);
+
+        require(getLinkageIndex(subject, linkedAddress) == -1);
 
         linkageCount = getLinkageCount(subject);
+        
+        subjectLinkages[subject].linkedAddresses.push(linkedAddress);
+        subjectLinkages[subject].linkHashMaps[(linkageCount)] = txHash;
         linkageCount++;
 
-        subjectLinkages[subject].linkHashMaps[linkedAddress] = txHash;
-        subjectLinkages[subject].linkedAddresses.push(linkedAddress);
-        subjectLinkages[subject].linkCount = linkageCount;
-
         GotLinkage(subject, linkedAddress, txHash, linkageCount);     
-        // return linkageCount;
     }
 
     function terminateLinkage(address linkedAddress) public returns(uint linkageCount) {
         address subject = msg.sender;
 
         bytes32 emptyVar;
-        require(subjectLinkages[subject].linkHashMaps[linkedAddress] != emptyVar);
+        require(getLinkageIndex(subject, linkedAddress) >= 0);
         
         linkageCount = getLinkageCount(subject);
         
         address[] memory newLinkages;
         uint i = 0; 
+        uint delIndex = 0;
         while (i < newLinkages.length){
             if(newLinkages[i] == linkedAddress){
+                delIndex = i;
                 continue;
             } 
             newLinkages[i] = subjectLinkages[subject].linkedAddresses[i];
@@ -100,10 +125,9 @@ contract ClaimRegistry is Destroyable {
         }
 
         subjectLinkages[subject].linkedAddresses = newLinkages;
-        subjectLinkages[subject].linkHashMaps[linkedAddress] = emptyVar;
+        subjectLinkages[subject].linkHashMaps[delIndex] = emptyVar;
         linkageCount--;
 
-        subjectLinkages[subject].linkCount = linkageCount;
         TerminatedLinkage(subject, linkedAddress, linkageCount);
 
         // return linkageCount;
