@@ -31,14 +31,12 @@ module.exports = function(deployer) {
   deployer.deploy(IcoPassToken, treasuryAddress).then(async _ => {
     let tokenContract = await IcoPassToken.deployed();
     let claimRegistry = await ClaimRegistry.deployed();
-    // console.log(tokenContract.address);
-    // console.log(tokenContract);
     let totalSupply = 1.0 * (await tokenContract.INITIAL_SUPPLY()).toNumber();
     let tokenDecimals = 1.0 * (await tokenContract.decimals()).toNumber();
 
     let tokenCap = Math.ceil(0.4 * totalSupply / (Math.pow(10, tokenDecimals)))
     
-    // await deployer.deploy(SecondPriceAuction, 
+    //await deployer.deploy(SecondPriceAuction, 
     //   claimRegistry.address, 
     //   tokenContract.address, 
     //   treasuryAddress,
@@ -48,38 +46,38 @@ module.exports = function(deployer) {
     // );  
   });
   
-  // deployer.then(async _ => {
-  //   let nsf = await NameStorageFacade.deployed();
+   deployer.then(async _ => {
+     let nsf = await NameStorageFacade.deployed();
 
-  //   [
-  //     "http://schema.org/Person",               // 1:0
-  //     "http://schema.org/Organization",         // 2:0
-  //     "http://kyc.notakey.com/PublicKey",       // 3:0
-  //     "http://kyc.notakey.com/Subject",         // 4:0
-  //     "http://kyc.notakey.com/Validator",       // 5:0
-  //     "http://kyc.notakey.com/IcoContributor"   // 6:0
-  //   ].forEach(async function( schemaName) {
-  //     let parts = schemaName.match(/.{1,32}/g);
-  //     let encodedParts = parts.map(x => web3.fromAscii(x));
-  //     await nsf.submitName(0, encodedParts);
-  //     console.log("Submitted schema " + schemaName);
-  //   });
+     [
+       "http://schema.org/Person",               // 1:0
+       "http://schema.org/Organization",         // 2:0
+       "http://kyc.notakey.com/PublicKey",       // 3:0
+       "http://kyc.notakey.com/Subject",         // 4:0
+       "http://kyc.notakey.com/Validator",       // 5:0
+       "http://kyc.notakey.com/IcoContributor"   // 6:0
+     ].forEach(async function( schemaName) {
+       let parts = schemaName.match(/.{1,32}/g);
+       let encodedParts = parts.map(x => web3.fromAscii(x));
+       await nsf.submitName(0, encodedParts);
+       console.log("Submitted schema " + schemaName);
+     });
 
-  //   [
-  //     "name",             // 1:1
-  //     "keyBlob",          // 2:1
-  //     "keyType",          // 3:1
-  //     "encryptionKey",    // 4:1
-  //     "passportPicture",  // 5:1
-  //     "reportBundleV1",   // 6:1
-  //     "nationalityIndex"  // 7:1
-  //   ].forEach(async function( attrName) {
-  //     let parts = attrName.match(/.{1,32}/g);
-  //     let encodedParts = parts.map(x => web3.fromAscii(x));
-  //     await nsf.submitName(1, encodedParts);
-  //     console.log("Submitted attr " + attrName);
-  //   });
-  // });
+    [
+      "name",             // 1:1
+      "keyBlob",          // 2:1 // 
+      "keyType",          // 3:1
+      "encryptionKey",    // 4:1 // to encrypt data for this subject, we publish key here
+      "passportPicture",  // 5:1
+      "reportBundleV1",   // 6:1
+      "nationalityIndex" // 7:1
+    ].forEach(async function( attrName) {
+      let parts = attrName.match(/.{1,32}/g);
+      let encodedParts = parts.map(x => web3.fromAscii(x));
+      await nsf.submitName(1, encodedParts);
+      console.log("Submitted attr " + attrName);
+    });
+  });
 
   // // Demo KYC attributes for idp.key
   // // THIS WILL NOT WORK FOR IDP -> TESTKEY
