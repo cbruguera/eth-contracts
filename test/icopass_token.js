@@ -33,235 +33,239 @@ contract('IcoPassToken', function (accounts) {
     token = await IcoPassToken.new(accounts[0]);
   });
 
-  // it('should return the correct totalSupply after construction', async function () {
-  //   let totalSupply = await token.totalSupply();
+  it('should return the correct totalSupply after construction', async function () {
+    let totalSupply = await token.totalSupply();
 
-  //   assert.equal(totalSupply.toNumber(), 10000000);
-  // });
-
-  // it('should set treasury to max supply during construction', async function () {
-  //   let treasuryBalance = await token.balanceOf(accounts[0]);
-
-  //   assert.equal(treasuryBalance.toNumber(), 10000000);
-  // });
-
-  // it('should return the correct allowance amount after approval', async function () {
-  //   let token = await IcoPassToken.new(accounts[0]);
-  //   await token.approve(accounts[1], 10000000);
-  //   let allowance = await token.allowance(accounts[0], accounts[1]);
-
-  //   assert.equal(allowance, 10000000);
-  // });
-
-  // it('should return correct balances after transfer', async function () {
-  //   let token = await IcoPassToken.new(accounts[0]);
-  //   await token.transfer(accounts[1], 10000000);
-  //   let balance0 = await token.balanceOf(accounts[0]);
-  //   assert.equal(balance0, 0);
-
-  //   let balance1 = await token.balanceOf(accounts[1]);
-  //   assert.equal(balance1, 10000000);
-  // });
-
-  // it('should throw an error when trying to transfer more than balance', async function () {
-  //   let token = await IcoPassToken.new(accounts[0]);
-  //   try {
-  //     await token.transfer(accounts[1], 10000001);
-  //     assert.fail('should have thrown before');
-  //   } catch (error) {
-  //     assertRevert(error);
-  //   }
-  // });
-
-  // it('should return correct balances after transfering from another account', async function () {
-  //   let token = await IcoPassToken.new(accounts[0]);
-  //   await token.approve(accounts[1], 10000000);
-  //   await token.transferFrom(accounts[0], accounts[2], 10000000, { from: accounts[1] });
-
-  //   let balance0 = await token.balanceOf(accounts[0]);
-  //   assert.equal(balance0, 0);
-
-  //   let balance1 = await token.balanceOf(accounts[2]);
-  //   assert.equal(balance1, 10000000);
-
-  //   let balance2 = await token.balanceOf(accounts[1]);
-  //   assert.equal(balance2, 0);
-  // });
-
-  // it('should throw an error when trying to transfer more than allowed', async function () {
-  //   await token.approve(accounts[1], 10000000 - 1);
-  //   try {
-  //     await token.transferFrom(accounts[0], accounts[2], 10000000, { from: accounts[1] });
-  //     assert.fail('should have thrown before');
-  //   } catch (error) {
-  //     assertRevert(error);
-  //   }
-  // });
-
-  // it('should throw an error when trying to transferFrom more than _from has', async function () {
-  //   let balance0 = await token.balanceOf(accounts[0]);
-  //   await token.approve(accounts[1], 99);
-  //   try {
-  //     await token.transferFrom(accounts[0], accounts[2], balance0 + 1, { from: accounts[1] });
-  //     assert.fail('should have thrown before');
-  //   } catch (error) {
-  //     assertRevert(error);
-  //   }
-  // });
-
-  // describe('payment distribution among holders', function () {
-  //   it("should not accept payments with no value", async function() {
-  //     try {
-  //       await token.distributeAmongHolders({value: 0});
-  //       assert.fail('should have thrown before');
-  //     } catch (error) {
-  //       assertRevert(error);
-  //     }
-  //   })
-
-  //   it("should distribute value proportionally among contributors", async function() {
-  //       var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);
-  //       var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);
-  //       var preDividendBalance3 = await web3.eth.getBalance(accounts[3]);
-
-  //       await token.transfer(accounts[1], 1000000); // 10%
-  //       await token.transfer(accounts[2], 4000000); // 40%
-  //       await token.transfer(accounts[3], 5000000); // 50%
-
-  //       await token.distributeAmongHolders({value: 100});
-        
-  //       var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);
-  //       var postDividendBalance2 = await web3.eth.getBalance(accounts[2]);
-  //       var postDividendBalance3 = await web3.eth.getBalance(accounts[3]);
-
-  //       preDividendBalance1.plus(10).should.be.bignumber.equal(postDividendBalance1);
-  //       preDividendBalance2.plus(40).should.be.bignumber.equal(postDividendBalance2);
-  //       preDividendBalance3.plus(50).should.be.bignumber.equal(postDividendBalance3);
-  //   })
-
-  it("increases expectedly when holders get added/removed", async function () {
-    this.timeout(5000000)
-
-    let iterations = 50000;
-    var holders = [];
-    let requiredKeyCount = Math.min(100, accounts.length - 1);
-    let tokenCount = (10000 / requiredKeyCount)
-
-    for (var i = 1; i <= requiredKeyCount; ++i) {
-      let newHolder = accounts[i];
-      
-      var transferTx = await token.transfer(newHolder, tokenCount * 1000);
-      console.log("Sent ", tokenCount * 10000, " to ", newHolder, ": ", transferTx.receipt.gasUsed);
-      holders.push(newHolder);
-    }
-
-    console.log("=== Now transferring between accounts ===");
-    console.log("=== Now transferring between accounts ===");
-    console.log("=== Now transferring between accounts ===");
-    console.log("=== Now transferring between accounts ===");
-
-    var tx;
-    exec("echo \"\" > /tmp/out");
-    for (i = 0; i < iterations; ++i) {
-      let fromIx = i % holders.length
-      let toIx = (i+1) % holders.length
-      let from = holders[fromIx]
-      let to = holders[toIx]
-      console.log("From: ", from)
-      console.log("To: ", to)
-      tx = await token.transfer(to, tokenCount * 1000, {from: from})
-      console.log(tx.receipt.gasUsed)
-      exec("echo "+tx.receipt.gasUsed+" >> /tmp/out");
-    }
-
-    // 79790
-
-    // tx holds the last (== most expensive) transaction receipt
-    console.log("Receipt for last transfer: ", tx.receipt.gasUsed);
-    assert.fail("yo");
+    assert.equal(totalSupply.toNumber(), 10000000);
   });
 
-  // it("should have a transaction fee in the expected range", async function () {
-  //   this.timeout(900000)
+  it('should set treasury to max supply during construction', async function () {
+    let treasuryBalance = await token.balanceOf(accounts[0]);
 
-  //   let iterations = 10;
-  //   let tokenCount = (10000 / iterations)
-  //   for (var i = 0; i < iterations; ++i) {
-  //     await token.transfer(randomAddress(), tokenCount * 1000); 
-  //     if (i % 100 == 0) {
-  //       console.log(i);
-  //     }
-  //   }
-    
-  //   let tx = await token.distributeAmongHolders({value: 10000000, gas: 100000000});
-    
-  //   // 1800000000000000
-  //   // (3500122000000000*50)/1000000000000000000
-  //   // (3500122000000000*1000)/1000000000000000000
+    assert.equal(treasuryBalance.toNumber(), 10000000);
+  });
 
-  //   console.log("Receipt for dividends: ", tx.receipt.gasUsed);
-  //   // tx.receipt.gasUsed.should.be.bignumber.lessThan(180);
-  // })
-  
+  it('should return the correct allowance amount after approval', async function () {
+    let token = await IcoPassToken.new(accounts[0]);
+    await token.approve(accounts[1], 10000000);
+    let allowance = await token.allowance(accounts[0], accounts[1]);
 
-  //   it("should fail value can not be split exactly", async function() {
-  //     await token.transfer(accounts[1], 1100000); // 11%
-  //     await token.transfer(accounts[2], 4000000); // 40%
-  //     await token.transfer(accounts[3], 4900000); // 49%
+    assert.equal(allowance, 10000000);
+  });
+
+  it('should return correct balances after transfer', async function () {
+    let token = await IcoPassToken.new(accounts[0]);
+    await token.transfer(accounts[1], 10000000);
+    let balance0 = await token.balanceOf(accounts[0]);
+    assert.equal(balance0, 0);
+
+    let balance1 = await token.balanceOf(accounts[1]);
+    assert.equal(balance1, 10000000);
+  });
+
+  it('should throw an error when trying to transfer more than balance', async function () {
+    let token = await IcoPassToken.new(accounts[0]);
+    try {
+      await token.transfer(accounts[1], 10000001);
+      assert.fail('should have thrown before');
+    } catch (error) {
+      assertRevert(error);
+    }
+  });
+
+  it('should return correct balances after transfering from another account', async function () {
+    let token = await IcoPassToken.new(accounts[0]);
+    await token.approve(accounts[1], 10000000);
+    await token.transferFrom(accounts[0], accounts[2], 10000000, { from: accounts[1] });
+
+    let balance0 = await token.balanceOf(accounts[0]);
+    assert.equal(balance0, 0);
+
+    let balance1 = await token.balanceOf(accounts[2]);
+    assert.equal(balance1, 10000000);
+
+    let balance2 = await token.balanceOf(accounts[1]);
+    assert.equal(balance2, 0);
+  });
+
+  it('should throw an error when trying to transfer more than allowed', async function () {
+    await token.approve(accounts[1], 10000000 - 1);
+    try {
+      await token.transferFrom(accounts[0], accounts[2], 10000000, { from: accounts[1] });
+      assert.fail('should have thrown before');
+    } catch (error) {
+      assertRevert(error);
+    }
+  });
+
+  it('should throw an error when trying to transferFrom more than _from has', async function () {
+    let balance0 = await token.balanceOf(accounts[0]);
+    await token.approve(accounts[1], 99);
+    try {
+      await token.transferFrom(accounts[0], accounts[2], balance0 + 1, { from: accounts[1] });
+      assert.fail('should have thrown before');
+    } catch (error) {
+      assertRevert(error);
+    }
+  });
+
+  describe("transfer (updating the holder list)", function() {
+    it("has fixed transfer costs with 1 or 4 users", async function () {
+      await token.transfer(accounts[1], 2500 * 1000);
+      await token.transfer(accounts[2], 2500 * 1000);
+      await token.transfer(accounts[3], 2500 * 1000);
+      await token.transfer(accounts[4], 2500 * 1000);
+      // 4 holders now, let's remove them all
+      let gas1 = (await token.transfer(accounts[0], 2500 * 1000, {from: accounts[1]})).receipt.gasUsed;
+      let gas2 = (await token.transfer(accounts[0], 2500 * 1000, {from: accounts[2]})).receipt.gasUsed;
+      let gas3 = (await token.transfer(accounts[0], 2500 * 1000, {from: accounts[3]})).receipt.gasUsed;
+      let gas4 = (await token.transfer(accounts[0], 2500 * 1000, {from: accounts[4]})).receipt.gasUsed;
       
-  //     // 101 will be split into 11, 40 and 49. 1 wei is left over
-  //     try {
-  //       await token.distributeAmongHolders({value: 101});
-  //       assert.fail('should have thrown before');
-  //     } catch (error) {
-  //       assertRevert(error);
-  //     }
-  //   })
-  // })
+      ((gas1+gas2+gas3+gas4)/4).should.be.bignumber.lessThan(80000);
 
-  // describe('validating allowance updates to spender', function () {
-  //   let preApproved;
+      // Now try with one
+      token = await IcoPassToken.new(accounts[0]);
+      let gas = (await token.transfer(accounts[1], 10000 * 1000)).receipt.gasUsed;
 
-  //   it('should start with zero', async function () {
-  //     preApproved = await token.allowance(accounts[0], accounts[1]);
-  //     assert.equal(preApproved, 0);
-  //   });
+      gas.should.be.bignumber.lessThan(80000);
+    });
 
-  //   it('should increase by 50 then decrease by 10', async function () {
-  //     await token.increaseApproval(accounts[1], 5000000);
-  //     let postIncrease = await token.allowance(accounts[0], accounts[1]);
-  //     preApproved.plus(5000000).should.be.bignumber.equal(postIncrease);
-  //     await token.decreaseApproval(accounts[1], 1000000);
-  //     let postDecrease = await token.allowance(accounts[0], accounts[1]);
-  //     postIncrease.minus(1000000).should.be.bignumber.equal(postDecrease);
-  //   });
-  // });
+    it("has a transfer gas cost below a known, expected threshold", async function () {
+      /*
+      transfer() manages a list of holders, so it is more expensive
+      than a regular ERC20 token. It can potentially be affected
+      by the existing state of holders:
+      - if somebody (after transfer) has a balance of 0, they are removed from the holder list
+      - if the recipient is a new holder, they are appended to the holder list
 
-  // it('should increase by 50 then set to 0 when decreasing by more than 50', async function () {
-  //   await token.approve(accounts[1], 5000000);
-  //   await token.decreaseApproval(accounts[1], 6000000);
-  //   let postDecrease = await token.allowance(accounts[0], accounts[1]);
-  //   assert.equal(postDecrease, 0);
-  // });
+      This test makes sure that the holder list is updated continuously (4 holders, where 1 is
+      constantly being removed, over 20 iterations), and verifies the last transfer cost.
+      */
+      let iterations = 20;
+      var holders = [];
+      let requiredKeyCount = Math.min(4, accounts.length - 1);
+      let tokenCount = (10000 / requiredKeyCount)
 
-  // it('should throw an error when trying to transfer to 0x0', async function () {
-  //   let token = await IcoPassToken.new(accounts[0]);
-  //   try {
-  //     await token.transfer(0x0, 100);
-  //     assert.fail('should have thrown before');
-  //   } catch (error) {
-  //     assertRevert(error);
-  //   }
-  // });
+      for (var i = 1; i <= requiredKeyCount; ++i) {
+        let newHolder = accounts[i];
+        
+        var transferTx = await token.transfer(newHolder, tokenCount * 1000);
+        holders.push(newHolder);
+      }
 
-  // it('should throw an error when trying to transferFrom to 0x0', async function () {
-  //   let token = await IcoPassToken.new(accounts[0]);
-  //   await token.approve(accounts[1], 100);
-  //   try {
-  //     await token.transferFrom(accounts[0], 0x0, 10000000, { from: accounts[1] });
-  //     assert.fail('should have thrown before');
-  //   } catch (error) {
-  //     assertRevert(error);
-  //   }
-  // });
+      var tx;
+      for (i = 0; i < iterations; ++i) {
+        let fromIx = i % holders.length
+        let toIx = (i+1) % holders.length
+        let from = holders[fromIx]
+        let to = holders[toIx]
+        
+        tx = await token.transfer(to, tokenCount * 1000, {from: from})
+        tx.receipt.gasUsed.should.be.bignumber.lessThan(150000);
+      }
+    });
+  });
+
+  describe('payment distribution among holders', function () {
+    it("should not accept payments with no value", async function() {
+      try {
+        await token.distributeAmongHolders({value: 0});
+        assert.fail('should have thrown before');
+      } catch (error) {
+        assertRevert(error);
+      }
+    })
+
+    it("should distribute value proportionally among contributors", async function() {
+        var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+        var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+        var preDividendBalance3 = await web3.eth.getBalance(accounts[3]);
+
+        await token.transfer(accounts[1], 1000000); // 10%
+        await token.transfer(accounts[2], 4000000); // 40%
+        await token.transfer(accounts[3], 5000000); // 50%
+
+        await token.distributeAmongHolders({value: 100});
+        
+        var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+        var postDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+        var postDividendBalance3 = await web3.eth.getBalance(accounts[3]);
+
+        preDividendBalance1.plus(10).should.be.bignumber.equal(postDividendBalance1);
+        preDividendBalance2.plus(40).should.be.bignumber.equal(postDividendBalance2);
+        preDividendBalance3.plus(50).should.be.bignumber.equal(postDividendBalance3);
+    })
+
+    it("should have an expected transaction fee for 10 token holders", async function () {
+      // Ideally, this should test more holders, but it is a very slow test
+      let iterations = 10;
+      let tokenCount = (10000 / iterations)
+      for (var i = 0; i < iterations; ++i) {
+        await token.transfer(randomAddress(), tokenCount * 1000); 
+      }
+      
+      let tx = await token.distributeAmongHolders({value: 10000 * 1000, gas: 100000000});
+      tx.receipt.gasUsed.should.be.bignumber.lessThan(3600000);
+    })
+
+    it("should fail value can not be split exactly", async function() {
+      await token.transfer(accounts[1], 1100000); // 11%
+      await token.transfer(accounts[2], 4000000); // 40%
+      await token.transfer(accounts[3], 4900000); // 49%
+      
+      // 101 will be split into 11, 40 and 49. 1 wei is left over
+      try {
+        await token.distributeAmongHolders({value: 101});
+        assert.fail('should have thrown before');
+      } catch (error) {
+        assertRevert(error);
+      }
+    })
+  })
+
+  describe('validating allowance updates to spender', function () {
+    let preApproved;
+
+    it('should start with zero', async function () {
+      preApproved = await token.allowance(accounts[0], accounts[1]);
+      assert.equal(preApproved, 0);
+    });
+
+    it('should increase by 50% then decrease by 10%', async function () {
+      await token.increaseApproval(accounts[1], 5000 * 1000);
+      let postIncrease = await token.allowance(accounts[0], accounts[1]);
+      preApproved.plus(5000 * 1000).should.be.bignumber.equal(postIncrease);
+      await token.decreaseApproval(accounts[1], 1000 * 1000);
+      let postDecrease = await token.allowance(accounts[0], accounts[1]);
+      postIncrease.minus(1000 * 1000).should.be.bignumber.equal(postDecrease);
+    });
+  });
+
+  it('should increase by 50% then set to 0 when decreasing by more than 50%', async function () {
+    await token.approve(accounts[1], 5000 * 1000);
+    await token.decreaseApproval(accounts[1], 6000 * 1000);
+    let postDecrease = await token.allowance(accounts[0], accounts[1]);
+    assert.equal(postDecrease, 0);
+  });
+
+  it('should throw an error when trying to transfer to 0x0', async function () {
+    let token = await IcoPassToken.new(accounts[0]);
+    try {
+      await token.transfer(0x0, 100);
+      assert.fail('should have thrown before');
+    } catch (error) {
+      assertRevert(error);
+    }
+  });
+
+  it('should throw an error when trying to transferFrom to 0x0', async function () {
+    let token = await IcoPassToken.new(accounts[0]);
+    await token.approve(accounts[1], 100);
+    try {
+      await token.transferFrom(accounts[0], 0x0, 10000000, { from: accounts[1] });
+      assert.fail('should have thrown before');
+    } catch (error) {
+      assertRevert(error);
+    }
+  });
 });

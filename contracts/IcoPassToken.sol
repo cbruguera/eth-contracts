@@ -16,14 +16,6 @@ contract IcoPassToken is StandardToken, DSMath {
   event Transferring(address recipient, uint transfer);
   event GotDividends(uint amt);
 
-  event HolderAdded(address holder);
-  event HolderRemoved(address holder);
-  event HolderCount(uint count);
-  event Message(string yo);
-
-  // using DoublyLinkedList for DoublyLinkedList.data;
-  // DoublyLinkedList.data public list;
-
   // 0 is unset
   address[] holders;
   mapping(address => uint) holderIndices;
@@ -36,6 +28,7 @@ contract IcoPassToken is StandardToken, DSMath {
     totalSupply = INITIAL_SUPPLY;
     balances[_treasury] = INITIAL_SUPPLY;
 
+    // 0 means 'unset', so ensure 0 index points to an invalid address
     holders.push(0x0);
     holderIndices[0x0] = 0;
 
@@ -51,12 +44,6 @@ contract IcoPassToken is StandardToken, DSMath {
     holders.push(holder);
     holderIndices[holder] = holders.length - 1;
     holderCount += 1;
-
-    // var it = list.find(holder);
-    // if (!list.iterate_valid(it))
-    // {
-    //   list.append(holder);
-    // }
   }
 
   function ensureHolderPurged(address holder) public {
@@ -68,14 +55,6 @@ contract IcoPassToken is StandardToken, DSMath {
     delete holders[ix];
     holderIndices[holder] = 0;
     holderCount -= 1;
-
-    HolderRemoved(holder);
-    
-    // var it = list.find(holder);
-    // if (list.iterate_valid(it))
-    // {
-    //   list.remove(it);
-    // }
   }
 
   function transfer(address _to, uint256 _value) public returns (bool) {
@@ -83,8 +62,6 @@ contract IcoPassToken is StandardToken, DSMath {
     
     updateHolderRegistration(msg.sender);
     updateHolderRegistration(_to);
-
-    HolderCount(holderCount);
   }
 
   function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
@@ -95,7 +72,6 @@ contract IcoPassToken is StandardToken, DSMath {
   }
 
   function updateHolderRegistration(address _holder) internal {
-    ensureHolderPurged(_holder); // for test
     if (balances[_holder] > 0) { ensureHolderRegistered(_holder); }
     if (balances[_holder] <= 0) { ensureHolderPurged(_holder); }
   }
@@ -121,29 +97,10 @@ contract IcoPassToken is StandardToken, DSMath {
       uint holderValue = wmul(msg.value, holderShare);
       accountedFor += holderValue;
     
-      // Transferring(holder, holderValue);
       holder.transfer(holderValue);
     }
 
-    // var it = list.iterate_start();
-    // while (list.iterate_valid(it)) {
-    //     address holder = list.iterate_get(it);
-            
-    //     uint holderBalance = balances[holder];
-    //     uint holderShare = wdiv(holderBalance, INITIAL_SUPPLY);
-    //     uint holderValue = wmul(msg.value, holderShare);
-    //     accountedFor += holderValue;
-    //     holder.transfer(holderValue);
-        
-    //     it = list.iterate_next(it);
-    // }
-    
-    // we might have 1 wei unaccounted for on account of rounding
     require(int(msg.value) - int(accountedFor) == 0);
-    // UnaccountedFor(int(msg.value) - int(accountedFor));
-    
-    // return the remainder to sender
-    // msg.sender.transfer(msg.value - accountedFor);
   }
 
 }
