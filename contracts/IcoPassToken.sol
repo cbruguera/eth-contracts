@@ -10,10 +10,10 @@ contract IcoPassToken is StandardToken, DSMath {
   string public constant symbol = "NIP";
   uint8 public constant decimals = 3;
 
-  uint256 public constant INITIAL_SUPPLY = 10000 * (10 ** uint256(decimals));
+  uint256 public constant INITIAL_SUPPLY = 490000 * (10 ** uint256(decimals));
 
   event UnaccountedFor(int256 valu);
-  event Transferring(address recipient, uint transfer);
+  event Transferring(address recipient, uint transfer, uint holderBalance);
   event GotDividends(uint amt);
 
   // 0 is unset
@@ -98,6 +98,7 @@ contract IcoPassToken is StandardToken, DSMath {
       accountedFor += holderValue;
     
       holder.transfer(holderValue);
+      Transferring(holder, holderValue, balances[holder]);
     }
 
     require(int(msg.value) - int(accountedFor) == 0);
