@@ -90,12 +90,10 @@ contract IcoPassToken is StandardToken, DSMath {
     if (balances[_holder] <= 0) { ensureHolderPurged(_holder); }
   }
 
-  function distributeAmongHolders() payable {
+  function distributeAmongHolders() public payable {
     require(msg.value > 0);
 
     uint accountedFor = 0;
-    uint remainingSends = 2;
-
     GotDividends(msg.value);
 
     for (uint i = 0; i < holders.length; ++i) {

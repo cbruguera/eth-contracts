@@ -1,3 +1,5 @@
+pragma solidity ^0.4.18;
+
 library DoublyLinkedList {
     struct data {
         uint80 first;
@@ -13,11 +15,11 @@ library DoublyLinkedList {
     }
     
     /// Appends `_data` to the end of the list `self`.
-    function append(data storage self, address _data) {
+    function append(data storage self, address _data) public {
         var index = uint80(self.items.push(Item({prev: self.last, next: None, data: _data})));
         if (self.last == None)
         {
-            if (self.first != None || self.count != 0) throw;
+            assert (self.first == None && self.count == 0);
             self.first = self.last = index;
             self.count = 1;
         }
@@ -30,8 +32,8 @@ library DoublyLinkedList {
     }
     /// Removes the element identified by the iterator
     /// `_index` from the list `self`.
-    function remove(data storage self, uint80 _index) {
-        Item item = self.items[_index - 1];
+    function remove(data storage self, uint80 _index) public {
+        Item storage item = self.items[_index - 1];
         if (item.prev == None)
             self.first = item.next;
         if (item.next == None)
@@ -45,7 +47,7 @@ library DoublyLinkedList {
     }
     /// @return an iterator pointing to the first element whose data
     /// is `_value` or an invalid iterator otherwise.
-    function find(data storage self, address _value) returns (uint80) {
+    function find(data storage self, address _value) public constant returns (uint80) {
         var it = iterate_start(self);
         while (iterate_valid(self, it)) {
             if (iterate_get(self, it) == _value) {
@@ -57,9 +59,9 @@ library DoublyLinkedList {
         return it;
     }
     // Iterator interface
-    function iterate_start(data storage self) returns (uint80) { return self.first; }
-    function iterate_valid(data storage self, uint80 _index) returns (bool) { return _index - 1 < self.items.length; }
-    function iterate_prev(data storage self, uint80 _index) returns (uint80) { return self.items[_index - 1].prev; }
-    function iterate_next(data storage self, uint80 _index) returns (uint80) { return self.items[_index - 1].next; }
-    function iterate_get(data storage self, uint80 _index) returns (address) { return self.items[_index - 1].data; }
+    function iterate_start(data storage self) public constant returns (uint80) { return self.first; }
+    function iterate_valid(data storage self, uint80 _index) public constant returns (bool) { return _index - 1 < self.items.length; }
+    function iterate_prev(data storage self, uint80 _index) public constant returns (uint80) { return self.items[_index - 1].prev; }
+    function iterate_next(data storage self, uint80 _index) public constant returns (uint80) { return self.items[_index - 1].next; }
+    function iterate_get(data storage self, uint80 _index) public constant returns (address) { return self.items[_index - 1].data; }
 }
