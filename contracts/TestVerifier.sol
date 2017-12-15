@@ -12,4 +12,14 @@ contract TestVerifier is NotakeyVerifierV1 {
         
     }
 
+    function test_preventedByNationalityBlacklist(address subject, uint256 nationalityBlacklist) public constant returns (bool)
+    {
+        return super._preventedByNationalityBlacklist(subject, nationalityBlacklist);
+    }
+
+    function test_hasIcoContributorType(address subject) public constant returns (bool)
+    {
+        return super._hasIcoContributorType(subject);
+    }
+
 }
