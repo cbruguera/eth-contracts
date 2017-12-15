@@ -7,7 +7,7 @@ contract AddressSet {
     event AddressAdded(address indexed addr, uint val);
     // event Attempt(uint a, uint b);
     
-    function addAddress(address addr) payable {
+    function addAddress(address addr) public payable {
         require (msg.value == this.balance);
         require (accountToRegistrarMap[addr] == address(0));
 
@@ -17,7 +17,7 @@ contract AddressSet {
         AddressAdded(addr, msg.value); 
     }
 
-    function contains(address addr) returns (bool r) {
+    function contains(address addr) public constant returns (bool r) {
        if (accountToRegistrarMap[addr] == address(0)) {
            return false;
        } else {
@@ -25,7 +25,7 @@ contract AddressSet {
        }
     }
 
-    function () {
+    function () public {
         revert();
     }
  }

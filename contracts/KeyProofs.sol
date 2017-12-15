@@ -5,16 +5,9 @@ import './Destroyable.sol';
 contract KeyProofs is Destroyable {
 
     event MadeChallengeV1(bytes32 indexed uuid, address validator, uint timestamp);
-    
-    // TODO: switch h with v, so they h+signerAddr can be packed together
     event GotProofV1(bytes32 indexed uuid, address signerAddr, uint8 v, bytes32 h, bytes32 r, bytes32 s);
-
     event GotSealV1(bytes32 indexed uuid, uint level);
     
-    function KeyProofs() {
-        
-    }
-
     struct ChallengeV1 {
         address validatorAddr;
         uint timestamp; // can this be extracted from block on client-side?
@@ -46,18 +39,18 @@ contract KeyProofs is Destroyable {
     }
     mapping (address => SealSetV1) sealsV1;
 
-    function getChallenge(bytes32 uuid) constant returns(address validatorAddr, uint timestamp) {
+    function getChallenge(bytes32 uuid) public constant returns(address validatorAddr, uint timestamp) {
         assert(challengesV1[uuid].timestamp != 0); // challenge has been made
         assert(challengesV1[uuid].response.responderAddr == address(0x0)); // but it has no response yet
 
         return (challengesV1[uuid].validatorAddr, challengesV1[uuid].timestamp);
     }
 
-    function isValidatedBy(address subject, address validator) constant returns(bool) {
+    function isValidatedBy(address subject, address validator) public constant returns(bool) {
         return sealsV1[subject].validatorToStorageLevel[validator] != 0;
     }
 
-    function sealProof(bytes32 uuid, uint keyStorageLevel) {
+    function sealProof(bytes32 uuid, uint keyStorageLevel) public {
         ChallengeV1 memory challenge = challengesV1[uuid];
 
         assert(challenge.validatorAddr == msg.sender);
@@ -74,22 +67,22 @@ contract KeyProofs is Destroyable {
         GotSealV1(uuid, keyStorageLevel);
     }
 
-    function getSealCount(address addr) constant returns(uint) {
+    function getSealCount(address addr) public constant returns(uint) {
         return sealsV1[addr].registeredValidatorAddresses.length;
     }
 
     // This should be used to verify if validator has actually performed key verification
-    function getSealBy(address userAddr, address validatorAddr) constant returns (uint) {
+    function getSealBy(address userAddr, address validatorAddr) public constant returns (uint) {
         return sealsV1[userAddr].validatorToStorageLevel[validatorAddr];
     }
 
-    function getSealAt(address addr, uint sealIx) constant returns (address, uint) {
+    function getSealAt(address addr, uint sealIx) public constant returns (address, uint) {
         address validatorAddr = sealsV1[addr].registeredValidatorAddresses[sealIx];
 
         return (validatorAddr, sealsV1[addr].validatorToStorageLevel[validatorAddr]);
     }
 
-    function getSignerAndSignatureInput(bytes32 uuid) constant returns(address, bytes32) {
+    function getSignerAndSignatureInput(bytes32 uuid) public constant returns(address, bytes32) {
         ChallengeV1 memory challenge = challengesV1[uuid];
 
         require(challenge.validatorAddr == msg.sender);
@@ -98,7 +91,7 @@ contract KeyProofs is Destroyable {
         return (challenge.response.responderAddr, challenge.response.hash);
     }
     
-    function requestProof(bytes32 uuid) {
+    function requestProof(bytes32 uuid) public {
         assert(challengesV1[uuid].timestamp == 0);
 
         ResponseV1 memory emptyResponse;
@@ -106,17 +99,22 @@ contract KeyProofs is Destroyable {
         MadeChallengeV1(uuid, msg.sender, block.timestamp);
     }
 
-    function submitProofEC(bytes32 uuid, address signerAddr, uint8 v, bytes32 h, bytes32 r, bytes32 s)
+    function submitProofEC(bytes32 uuid, address signerAddr, uint8 v, bytes32 h, bytes32 r, bytes32 s) public
     {
         submitProof(uuid, signerAddr, v, h, r, s);
     }
 
-    function submitProofRSA(bytes32 uuid, bytes32[] publicKey, bytes32[] signature)
+    function submitProofRSA(bytes32 uuid, bytes32[] publicKey, bytes32[] signature) public pure
     {
+        // Assert the param names to silence warnings about unused parameters
+        require(uuid != 0x0);
+        require(publicKey.length != 0);
+        require(signature.length != 0);
+
         assert(false);
     }
 
-    function submitProof(bytes32 uuid, address signerAddr, uint8 v, bytes32 h, bytes32 r, bytes32 s) private
+    function submitProof(bytes32 uuid, address signerAddr, uint8 v, bytes32 h, bytes32 r, bytes32 s) public
     {
         assert(challengesV1[uuid].timestamp != 0); // challenge has been made
         assert(challengesV1[uuid].response.responderAddr == address(0x0)); // but it has no response yet
@@ -127,7 +125,7 @@ contract KeyProofs is Destroyable {
         challengesV1[uuid].response = ResponseV1(h, false, true, v, r, s, signerAddr);
     }
 
-    function verify(address p, uint8 v, bytes32 hash, bytes32 r, bytes32 s) internal constant returns(bool) {
+    function verify(address p, uint8 v, bytes32 hash, bytes32 r, bytes32 s) private pure returns(bool) {
         
         bool result = (ecrecover(hash, v, r, s) == p);
 

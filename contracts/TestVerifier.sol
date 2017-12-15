@@ -8,7 +8,7 @@ contract TestVerifier is NotakeyVerifierV1 {
         
     }
 
-    function vipFunction(uint nationBlacklist) onlyVerifiedSenders(msg.sender, nationBlacklist) public {
+    function vipFunction(uint nationBlacklist) onlyVerifiedSenders(msg.sender, nationBlacklist) public view {
         
     }
 
