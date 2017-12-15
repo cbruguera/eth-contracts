@@ -220,7 +220,6 @@ contract('IcoPassToken', function (accounts) {
         await token.distributeAmongHolders({value: 101});
         assert.fail('should have thrown before');
       } catch (error) {
-        console.log(error);
         assertRevert(error);
       }
     })
