@@ -9,13 +9,16 @@ contract IcoPassToken is StandardToken, DSMath {
   string public constant name = "IcoPassToken";
   string public constant symbol = "NIP";
   uint8 public constant decimals = 3;
-
   uint256 public constant INITIAL_SUPPLY = 490000 * (10 ** uint256(decimals));
+
+  uint private totalDeposited = 0;
 
   event UnaccountedFor(int256 valu);
   event Transferring(address recipient, uint transfer, uint holderBalance);
   event GotDividends(uint amt);
   event Debug(string yo, uint ttt);
+
+  mapping (address => uint) totalWithdrawn;
 
   /**
    * @dev Constructor that gives msg.sender all of existing tokens.
@@ -26,7 +29,7 @@ contract IcoPassToken is StandardToken, DSMath {
   }
 
   modifier valueDivisibleBySupply() {
-    require(msg.value > INITIAL_SUPPLY);
+    require(msg.value >= INITIAL_SUPPLY);
     uint valuePerToken = msg.value / INITIAL_SUPPLY;
     uint processableAmount = valuePerToken * INITIAL_SUPPLY;
 
@@ -39,6 +42,14 @@ contract IcoPassToken is StandardToken, DSMath {
     _;
   }
 
+  function transfer(address _to, uint256 _value) public returns (bool) {
+    super.transfer(_to, _value);
+  }
+
+  function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+    super.transferFrom(_from, _to, _value);
+  }
+
   // modifier updateAccount(address subject) {
 
   // }
@@ -47,36 +58,33 @@ contract IcoPassToken is StandardToken, DSMath {
 
   // }
 
-  function withdrawDividends() {
+  function withdrawDividends() public withdraws(msg.sender) {}
+  
+  modifier withdraws(address holder) {
+    uint owed = owedToHolder(holder);
+    holder.transfer(owed);
+    Transferring(holder, owed, balances[holder]);
 
+    _;
+  }
+
+  function owedToHolder(address holder) internal constant returns (uint) {
+    uint tokenBalance = balances[holder];
+    uint availableDividends = totalDeposited -  totalWithdrawn[holder];
+
+    uint holderShare = wdiv(tokenBalance, INITIAL_SUPPLY);
+    uint holderValue = wmul(availableDividends, holderShare);
+
+    return holderValue;
   }
 
   function depositDividends() public payable valueDivisibleBySupply() {
-    Debug("Msg value (in)", msg.value);
-    
-    // uint accountedFor = 0;
-    // uint remainingSends = 2;
+    GotDividends(msg.value);
+    totalDeposited += msg.value;
+  }
 
-    // GotDividends(msg.value);
-
-    // for (uint i = 0; i < holders.length; ++i) {
-    //   address holder = holders[i];
-    //   if (holder == 0x0) { continue; }
-      
-    //   uint ix = holderIndices[holder];
-    //   if (ix == 0) { continue; }
-
-    //   uint holderBalance = balances[holder];
-
-    //   uint holderShare = wdiv(holderBalance, INITIAL_SUPPLY);
-    //   uint holderValue = wmul(msg.value, holderShare);
-    //   accountedFor += holderValue;
-    
-    //   holder.transfer(holderValue);
-    //   Transferring(holder, holderValue, balances[holder]);
-    // }
-
-    // require(int(msg.value) - int(accountedFor) == 0);
+  function () {
+    revert();
   }
 
 }

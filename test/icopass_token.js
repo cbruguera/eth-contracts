@@ -33,6 +33,46 @@ contract('IcoPassToken', function (accounts) {
     token = await IcoPassToken.new(accounts[0]);
   });
 
+  describe("transfer", function() {
+
+  });
+
+  describe("transferFrom", function () {
+
+  });
+
+  describe("withdrawDividends", function() {
+    it("does nothing if there are no dividends", async function () {
+      var preDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+      let txGasPrice = 1000000000;
+      let txGasFee = (await token.withdrawDividends({gasPrice: txGasPrice})).receipt.gasUsed;
+      var postDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+
+      let expectedTxFee = txGasFee * txGasPrice;
+      preDividendBalance0.minus(postDividendBalance0).should.be.bignumber.equal(expectedTxFee);
+    });
+
+    it("adds proportional dividend amount to token holders' ethereum balances", async function () {
+      var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+      var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+
+      await token.transfer(accounts[1], 122500 * 1000); // 25%
+      await token.transfer(accounts[2], 367500 * 1000); // 75%
+
+      await token.depositDividends({value: 490000000})
+
+      let txGasPrice = 1000000000;
+      let gasFee1 = (await token.withdrawDividends({from: accounts[1], gasPrice: txGasPrice})).receipt.gasUsed;
+      let gasFee2 = (await token.withdrawDividends({from: accounts[2], gasPrice: txGasPrice})).receipt.gasUsed;
+      
+      var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+      var postDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+
+      postDividendBalance1.minus(preDividendBalance1).plus(gasFee1 * txGasPrice).should.be.bignumber.equal(122500 * 1000);
+      postDividendBalance2.minus(preDividendBalance2).plus(gasFee2 * txGasPrice).should.be.bignumber.equal(367500 * 1000);
+    });
+  });
+
   describe("depositDividends", function() {
     it("refuses amount which is not divisible by token supply", async function () {
       
@@ -42,18 +82,17 @@ contract('IcoPassToken', function (accounts) {
       } catch (error) {
         assertRevert(error);
       }
-  
-    });
 
-    it("accepts amount which is divisible by token supply", async function () {
-      
       try {
-        await token.depositDividends({value: 490000000})
+        await token.depositDividends({value: 490000000 - 1})
         assert.fail('should have thrown before');
       } catch (error) {
         assertRevert(error);
       }
-  
+    });
+
+    it("accepts amount which is divisible by token supply", async function () {
+      await token.depositDividends({value: 490000000})
     });
   });
 
