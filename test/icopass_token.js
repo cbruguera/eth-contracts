@@ -20,7 +20,6 @@ let randomKeypair = function () {
   return ['0x' + privKey.toString('hex'), '0x' + pubKeyBuffer.toString('hex')];
 }
 
-
 require('chai')
   .use(require('chai-as-promised'))
   .use(require('chai-bignumber')(BigNumber))
@@ -34,24 +33,77 @@ contract('IcoPassToken', function (accounts) {
   });
 
   describe("transfer", function() {
-    // it("pays out all dividends to the sender", async function() {
-    //   await token.depositDividends({value: 490000000})
+    it("does not allow token recipient to withdraw dividends that have been withdrawn by previous holder", async function() {
+      await token.transfer(accounts[1], 122500000) // 25%
+      await token.transfer(accounts[2], 122500000) // 25%
+      await token.transfer(accounts[3], 122500000) // 25%
       
-    //   var preDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+      await token.depositDividends({value: 490000000})
+      await token.withdrawDividends(); // accounts[0] withdraws 25%
 
-    //   let txGasPrice = 1000000000;
-    //   let gasFee = (await token.transfer(accounts[1], 1, {gasPrice: txGasPrice})).receipt.gasUsed;
+      await token.transfer(accounts[1], 122500000) // accounts[1] now has 50% of tokens
+
+      // at this point, if accounts[1] withdraws, they should not attempt to withdraw 50%, 
+      // because half of their tokens were already used to withdraw money
+
+      var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);      
+      let txGasPrice = 1000000000;
+      let gasFee = (await token.withdrawDividends({from: accounts[1], gasPrice: txGasPrice})).receipt.gasUsed;
       
-    //   var postDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+      var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);
 
-    //   let expectedTxFees = gasFee * txGasPrice;
-    //   postDividendBalance0.minus(preDividendBalance0).plus(expectedTxFees).should.be.bignumber.equal(490000000);
-    // });
+      let expectedTxFees = gasFee * txGasPrice;
+
+      postDividendBalance1.minus(preDividendBalance1).plus(expectedTxFees).should.be.bignumber.equal(122500000);
+    });
+  });
+
+  describe("fallback function", function () {
+    it("does not accept values non-divisible by supply", async function() {
+      try {
+        await token.depositDividends({value: 490000000 + 1})
+        assert.fail('should have thrown before');
+      } catch (error) {
+        assertRevert(error);
+      }
+    });
+
+    it("deposits received value as dividends", async function() {
+      let preBalance0 = await web3.eth.getBalance(accounts[0]);      
+      let gasPrice = 1000000000
+      let txGas1 = (await token.sendTransaction({gasPrice: gasPrice, value: 490000000})).receipt.gasUsed
+      let txGas2 = (await token.withdrawDividends({gasPrice: gasPrice})).receipt.gasUsed
+      let txFees = (txGas1 + txGas2) * gasPrice
+      let postBalance0 = await web3.eth.getBalance(accounts[0])    
+      
+      preBalance0.minus(txFees).should.be.bignumber.equal(postBalance0)
+    });
   });
 
   describe("transferFrom", function () {
-    it("pays out dividends to the token owner upon transfer", async function () {
+    it("assigns dividends to the owner instead of spender", async function () {
+      await token.depositDividends({value: 490000000})
+      
+      await token.approve(accounts[2], 122500000);
+      await token.transferFrom(accounts[0], accounts[1], 122500000, {from: accounts[2]}) 
 
+      var preDividendBalance0 = await web3.eth.getBalance(accounts[0]);      
+      var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);      
+      var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);      
+
+      // 0 should have 100% dividends, others 0%
+      let txGasPrice = 1000000000;
+      let txGas0 = (await token.withdrawDividends({from: accounts[0], gasPrice: txGasPrice})).receipt.gasUsed;
+      let txGas1 = (await token.withdrawDividends({from: accounts[1], gasPrice: txGasPrice})).receipt.gasUsed;
+      let txGas2 = (await token.withdrawDividends({from: accounts[2], gasPrice: txGasPrice})).receipt.gasUsed;
+      
+      var postDividendBalance0 = await web3.eth.getBalance(accounts[0]);      
+      var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);      
+      var postDividendBalance2 = await web3.eth.getBalance(accounts[2]);      
+
+      postDividendBalance0.minus(preDividendBalance0).plus(txGas0 * txGasPrice).should.be.bignumber.equal(490000000);
+      postDividendBalance1.minus(preDividendBalance1).plus(txGas1 * txGasPrice).should.be.bignumber.equal(0);
+      postDividendBalance2.minus(preDividendBalance2).plus(txGas2 * txGasPrice).should.be.bignumber.equal(0);
     });
 
     it("does not allow token recipient to withdraw dividends that have been withdrawn by previous holder", async function() {
@@ -66,14 +118,8 @@ contract('IcoPassToken', function (accounts) {
       await token.approve(accounts[2], 122500000);
       await token.transferFrom(accounts[0], accounts[1], 122500000, {from: accounts[2]}) // accounts[1] now has 50% of tokens
 
-      // totalDeposited = 490000000
-      // totalWithdrawn = 122500000
-      // available = 490000000 - 122500000 = 367500000
-      // to_acc1 = 367500000 
-
       // at this point, if accounts[1] withdraws, they should not attempt to withdraw 50%, 
       // because half of their tokens were already used to withdraw money
-      
 
       var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);      
       let txGasPrice = 1000000000;
@@ -88,15 +134,15 @@ contract('IcoPassToken', function (accounts) {
   });
 
   describe("withdrawDividends", function() {
-    // it("does nothing if there are no dividends", async function () {
-    //   var preDividendBalance0 = await web3.eth.getBalance(accounts[0]);
-    //   let txGasPrice = 1000000000;
-    //   let txGasFee = (await token.withdrawDividends({gasPrice: txGasPrice})).receipt.gasUsed;
-    //   var postDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+    it("does nothing if there are no dividends", async function () {
+      var preDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+      let txGasPrice = 1000000000;
+      let txGasFee = (await token.withdrawDividends({gasPrice: txGasPrice})).receipt.gasUsed;
+      var postDividendBalance0 = await web3.eth.getBalance(accounts[0]);
 
-    //   let expectedTxFee = txGasFee * txGasPrice;
-    //   preDividendBalance0.minus(postDividendBalance0).should.be.bignumber.equal(expectedTxFee);
-    // });
+      let expectedTxFee = txGasFee * txGasPrice;
+      preDividendBalance0.minus(postDividendBalance0).should.be.bignumber.equal(expectedTxFee);
+    });
 
     it("does not allow token recipient to withdraw dividends that have been withdrawn by previous holder", async function() {
       
@@ -109,14 +155,8 @@ contract('IcoPassToken', function (accounts) {
 
       await token.transfer(accounts[1], 122500000) // accounts[1] now has 50% of tokens
 
-      // totalDeposited = 490000000
-      // totalWithdrawn = 122500000
-      // available = 490000000 - 122500000 = 367500000
-      // to_acc1 = 367500000 
-
       // at this point, if accounts[1] withdraws, they should not attempt to withdraw 50%, 
       // because half of their tokens were already used to withdraw money
-      
 
       var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);      
       let txGasPrice = 1000000000;
@@ -129,64 +169,64 @@ contract('IcoPassToken', function (accounts) {
       postDividendBalance1.minus(preDividendBalance1).plus(expectedTxFees).should.be.bignumber.equal(122500000);
     });
 
-    // it("does not allow the same dividends to be withdrawn twice", async function () {
-    //   await token.depositDividends({value: 490000000})
+    it("does not allow the same dividends to be withdrawn twice", async function () {
+      await token.depositDividends({value: 490000000})
       
-    //   var preDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+      var preDividendBalance0 = await web3.eth.getBalance(accounts[0]);
 
-    //   let txGasPrice = 1000000000;
-    //   let gasFee1 = (await token.withdrawDividends({gasPrice: txGasPrice})).receipt.gasUsed;
-    //   let gasFee2 = (await token.withdrawDividends({gasPrice: txGasPrice})).receipt.gasUsed;
+      let txGasPrice = 1000000000;
+      let gasFee1 = (await token.withdrawDividends({gasPrice: txGasPrice})).receipt.gasUsed;
+      let gasFee2 = (await token.withdrawDividends({gasPrice: txGasPrice})).receipt.gasUsed;
       
-    //   var postDividendBalance0 = await web3.eth.getBalance(accounts[0]);
+      var postDividendBalance0 = await web3.eth.getBalance(accounts[0]);
 
-    //   let expectedTxFees = (gasFee1 + gasFee2) * txGasPrice;
-    //   postDividendBalance0.minus(preDividendBalance0).plus(expectedTxFees).should.be.bignumber.equal(490000000);
-    // });
+      let expectedTxFees = (gasFee1 + gasFee2) * txGasPrice;
+      postDividendBalance0.minus(preDividendBalance0).plus(expectedTxFees).should.be.bignumber.equal(490000000);
+    });
 
-    // it("adds proportional dividend amount to token holders' ethereum balances", async function () {
-    //   var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);
-    //   var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+    it("adds proportional dividend amount to token holders' ethereum balances", async function () {
+      var preDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+      var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);
 
-    //   await token.transfer(accounts[1], 122500 * 1000); // 25%
-    //   await token.transfer(accounts[2], 367500 * 1000); // 75%
+      await token.transfer(accounts[1], 122500 * 1000); // 25%
+      await token.transfer(accounts[2], 367500 * 1000); // 75%
 
-    //   await token.depositDividends({value: 490000000})
+      await token.depositDividends({value: 490000000})
 
-    //   let txGasPrice = 1000000000;
-    //   let gasFee1 = (await token.withdrawDividends({from: accounts[1], gasPrice: txGasPrice})).receipt.gasUsed;
-    //   let gasFee2 = (await token.withdrawDividends({from: accounts[2], gasPrice: txGasPrice})).receipt.gasUsed;
+      let txGasPrice = 1000000000;
+      let gasFee1 = (await token.withdrawDividends({from: accounts[1], gasPrice: txGasPrice})).receipt.gasUsed;
+      let gasFee2 = (await token.withdrawDividends({from: accounts[2], gasPrice: txGasPrice})).receipt.gasUsed;
       
-    //   var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);
-    //   var postDividendBalance2 = await web3.eth.getBalance(accounts[2]);
+      var postDividendBalance1 = await web3.eth.getBalance(accounts[1]);
+      var postDividendBalance2 = await web3.eth.getBalance(accounts[2]);
 
-    //   postDividendBalance1.minus(preDividendBalance1).plus(gasFee1 * txGasPrice).should.be.bignumber.equal(122500 * 1000);
-    //   postDividendBalance2.minus(preDividendBalance2).plus(gasFee2 * txGasPrice).should.be.bignumber.equal(367500 * 1000);
-    // });
+      postDividendBalance1.minus(preDividendBalance1).plus(gasFee1 * txGasPrice).should.be.bignumber.equal(122500 * 1000);
+      postDividendBalance2.minus(preDividendBalance2).plus(gasFee2 * txGasPrice).should.be.bignumber.equal(367500 * 1000);
+    });
   });
 
-  // describe("depositDividends", function() {
-  //   it("refuses amount which is not divisible by token supply", async function () {
+  describe("depositDividends", function() {
+    it("refuses amount which is not divisible by token supply", async function () {
       
-  //     try {
-  //       await token.depositDividends({value: 490000000 + 1})
-  //       assert.fail('should have thrown before');
-  //     } catch (error) {
-  //       assertRevert(error);
-  //     }
+      try {
+        await token.depositDividends({value: 490000000 + 1})
+        assert.fail('should have thrown before');
+      } catch (error) {
+        assertRevert(error);
+      }
 
-  //     try {
-  //       await token.depositDividends({value: 490000000 - 1})
-  //       assert.fail('should have thrown before');
-  //     } catch (error) {
-  //       assertRevert(error);
-  //     }
-  //   });
+      try {
+        await token.depositDividends({value: 490000000 - 1})
+        assert.fail('should have thrown before');
+      } catch (error) {
+        assertRevert(error);
+      }
+    });
 
-  //   it("accepts amount which is divisible by token supply", async function () {
-  //     await token.depositDividends({value: 490000000})
-  //   });
-  // });
+    it("accepts amount which is divisible by token supply", async function () {
+      await token.depositDividends({value: 490000000})
+    });
+  });
 
 
 

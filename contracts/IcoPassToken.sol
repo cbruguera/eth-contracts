@@ -12,18 +12,12 @@ contract IcoPassToken is StandardToken, DSMath {
   uint256 public constant INITIAL_SUPPLY = 490000 * (10 ** uint256(decimals));
 
   uint private totalDeposited = 0;
-  // uint private totalWithdrawn = 0;
-  // mapping(address => uint) pendingWithdrawal;
+  mapping (address => uint) private totalDepositedAtCycleStart;
+  mapping (address => uint) private pendingDividends;
 
-  event UnaccountedFor(int256 valu);
-  event Transferring(address recipient, uint transfer, uint holderBalance);
   event DividendsDeposited(uint amt);
   event DividendsWithdrawn(address recipient, uint amt);
-  event PendingDividendsWithdrawn(address recipient, uint amt);
-  event Debug(string yo, uint ttt);
-
   
-
   /**
    * @dev Constructor that gives msg.sender all of existing tokens.
    */
@@ -32,40 +26,40 @@ contract IcoPassToken is StandardToken, DSMath {
     balances[_treasury] = INITIAL_SUPPLY;
   }
 
-  modifier valueDivisibleBySupply() {
+  modifier requiresValueDivisibleBySupply() {
     require(msg.value >= INITIAL_SUPPLY);
     uint valuePerToken = msg.value / INITIAL_SUPPLY;
     uint processableAmount = valuePerToken * INITIAL_SUPPLY;
 
-    Debug("Value per token", valuePerToken);
-    Debug("Processable", processableAmount);
-    Debug("Msg value", msg.value);
-    
     require(processableAmount == msg.value);
 
     _;
   }
 
-  mapping (address => uint) totalDepositedAtCycleStart;
-  mapping (address => uint) pendingDividends;
-
-  function transfer(address _to, uint256 _value) assignsPendingDividendsAndResetCycle(msg.sender) assignsPendingDividendsAndResetCycle(_to) public returns (bool) {
+  function transfer(address _to, uint256 _value) 
+    assignsPendingDividendsAndResetCycle(msg.sender) 
+    assignsPendingDividendsAndResetCycle(_to) 
+    public 
+    returns (bool) 
+  {
     super.transfer(_to, _value);
   }
 
-  function transferFrom(address _from, address _to, uint256 _value) assignsPendingDividendsAndResetCycle(_from) assignsPendingDividendsAndResetCycle(_to) public returns (bool) {
+  function transferFrom(address _from, address _to, uint256 _value) 
+    assignsPendingDividendsAndResetCycle(_from) 
+    assignsPendingDividendsAndResetCycle(_to) 
+    public 
+    returns (bool) 
+  {
     super.transferFrom(_from, _to, _value);
   }
 
-  // modifier updateAccount(address subject) {
-
-  // }
-
-  // modifier updateSender(address subject) {
-
-  // }
-
-  function withdrawDividends() public assignsPendingDividendsAndResetCycle(msg.sender) withdrawPending(msg.sender) {}
+  function withdrawDividends() 
+    public 
+    assignsPendingDividendsAndResetCycle(msg.sender) 
+    withdrawPending(msg.sender) 
+  {
+  }
   
   // modifier withdrawsPending(address holder) {
   //   uint pendingAmount = owedToHolder(holder);
@@ -108,13 +102,12 @@ contract IcoPassToken is StandardToken, DSMath {
     return holderValue;
   }
 
-  function depositDividends() public payable valueDivisibleBySupply() {
+  function depositDividends() public payable requiresValueDivisibleBySupply() {
     DividendsDeposited(msg.value);
     totalDeposited += msg.value;
   }
 
-  function () {
-    revert();
+  function () payable {
+    depositDividends();
   }
-
 }
