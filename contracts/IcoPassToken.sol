@@ -10,14 +10,11 @@ contract IcoPassToken is StandardToken, DSMath {
   string public constant symbol = "NIP";
   uint8 public constant decimals = 3;
 
-  uint256 public constant INITIAL_SUPPLY = 10000 * (10 ** uint256(decimals));
+  uint256 public constant INITIAL_SUPPLY = 490000 * (10 ** uint256(decimals));
 
   event UnaccountedFor(int256 valu);
-  event Transferring(address recipient, uint transfer);
+  event Transferring(address recipient, uint transfer, uint holderBalance);
   event GotDividends(uint amt);
-  
-  // using DoublyLinkedList for DoublyLinkedList.data;
-  // DoublyLinkedList.data public list;
 
   // 0 is unset
   address[] holders;
@@ -31,6 +28,7 @@ contract IcoPassToken is StandardToken, DSMath {
     totalSupply = INITIAL_SUPPLY;
     balances[_treasury] = INITIAL_SUPPLY;
 
+    // 0 means 'unset', so ensure 0 index points to an invalid address
     holders.push(0x0);
     holderIndices[0x0] = 0;
 
@@ -46,29 +44,17 @@ contract IcoPassToken is StandardToken, DSMath {
     holders.push(holder);
     holderIndices[holder] = holders.length - 1;
     holderCount += 1;
-
-    // var it = list.find(holder);
-    // if (!list.iterate_valid(it))
-    // {
-    //   list.append(holder);
-    // }
   }
 
   function ensureHolderPurged(address holder) public {
     require(holder != 0x0);
 
-    uint ix = holderIndices[0x0];
+    uint ix = holderIndices[holder];
     if (ix == 0) { return; }
 
     delete holders[ix];
     holderIndices[holder] = 0;
     holderCount -= 1;
-    
-    // var it = list.find(holder);
-    // if (list.iterate_valid(it))
-    // {
-    //   list.remove(it);
-    // }
   }
 
   function transfer(address _to, uint256 _value) public returns (bool) {
@@ -104,34 +90,16 @@ contract IcoPassToken is StandardToken, DSMath {
       if (ix == 0) { continue; }
 
       uint holderBalance = balances[holder];
-      
+
       uint holderShare = wdiv(holderBalance, INITIAL_SUPPLY);
       uint holderValue = wmul(msg.value, holderShare);
       accountedFor += holderValue;
     
-      // Transferring(holder, holderValue);
       holder.transfer(holderValue);
+      Transferring(holder, holderValue, balances[holder]);
     }
 
-    // var it = list.iterate_start();
-    // while (list.iterate_valid(it)) {
-    //     address holder = list.iterate_get(it);
-            
-    //     uint holderBalance = balances[holder];
-    //     uint holderShare = wdiv(holderBalance, INITIAL_SUPPLY);
-    //     uint holderValue = wmul(msg.value, holderShare);
-    //     accountedFor += holderValue;
-    //     // holder.transfer(holderValue);
-        
-    //     it = list.iterate_next(it);
-    // }
-    
-    // we might have 1 wei unaccounted for on account of rounding
     require(int(msg.value) - int(accountedFor) == 0);
-    // UnaccountedFor(int(msg.value) - int(accountedFor));
-    
-    // return the remainder to sender
-    // msg.sender.transfer(msg.value - accountedFor);
   }
 
 }

@@ -3,16 +3,21 @@ const assertRevert = require('./helpers/assertRevert');
 const secp256k1 = require('secp256k1');
 const crypto = require('crypto');
 const keccak = require('keccak');
+const { exec } = require('child_process');
 
 const BigNumber = web3.BigNumber;
 
 let randomAddress = function () {
+  return randomKeypair()[1];
+}
+
+let randomKeypair = function () {
   let privKey = crypto.randomBytes(32)
   let pubKey = secp256k1.publicKeyCreate(privKey)
   var pubKeyBuffer = Buffer(keccak('keccak256').update(pubKey).digest())
   
   pubKeyBuffer = pubKeyBuffer.slice(12, 32);
-  return '0x' + pubKeyBuffer.toString('hex');
+  return ['0x' + privKey.toString('hex'), '0x' + pubKeyBuffer.toString('hex')];
 }
 
 
@@ -31,13 +36,13 @@ contract('IcoPassToken', function (accounts) {
   it('should return the correct totalSupply after construction', async function () {
     let totalSupply = await token.totalSupply();
 
-    assert.equal(totalSupply.toNumber(), 10000000);
+    assert.equal(totalSupply.toNumber(), 490000000);
   });
 
   it('should set treasury to max supply during construction', async function () {
     let treasuryBalance = await token.balanceOf(accounts[0]);
 
-    assert.equal(treasuryBalance.toNumber(), 10000000);
+    assert.equal(treasuryBalance.toNumber(), 490000000);
   });
 
   it('should return the correct allowance amount after approval', async function () {
@@ -50,18 +55,18 @@ contract('IcoPassToken', function (accounts) {
 
   it('should return correct balances after transfer', async function () {
     let token = await IcoPassToken.new(accounts[0]);
-    await token.transfer(accounts[1], 10000000);
+    await token.transfer(accounts[1], 490000000);
     let balance0 = await token.balanceOf(accounts[0]);
     assert.equal(balance0, 0);
 
     let balance1 = await token.balanceOf(accounts[1]);
-    assert.equal(balance1, 10000000);
+    assert.equal(balance1, 490000000);
   });
 
   it('should throw an error when trying to transfer more than balance', async function () {
     let token = await IcoPassToken.new(accounts[0]);
     try {
-      await token.transfer(accounts[1], 10000001);
+      await token.transfer(accounts[1], 490000001);
       assert.fail('should have thrown before');
     } catch (error) {
       assertRevert(error);
@@ -70,14 +75,14 @@ contract('IcoPassToken', function (accounts) {
 
   it('should return correct balances after transfering from another account', async function () {
     let token = await IcoPassToken.new(accounts[0]);
-    await token.approve(accounts[1], 10000000);
-    await token.transferFrom(accounts[0], accounts[2], 10000000, { from: accounts[1] });
+    await token.approve(accounts[1], 490000000);
+    await token.transferFrom(accounts[0], accounts[2], 490000000, { from: accounts[1] });
 
     let balance0 = await token.balanceOf(accounts[0]);
     assert.equal(balance0, 0);
 
     let balance1 = await token.balanceOf(accounts[2]);
-    assert.equal(balance1, 10000000);
+    assert.equal(balance1, 490000000);
 
     let balance2 = await token.balanceOf(accounts[1]);
     assert.equal(balance2, 0);
@@ -104,6 +109,65 @@ contract('IcoPassToken', function (accounts) {
     }
   });
 
+  describe("transfer (updating the holder list)", function() {
+    it("has fixed transfer costs with 1 or 4 users", async function () {
+      // 122500 is 1/4 of max supply
+
+      await token.transfer(accounts[1], 122500 * 1000);
+      await token.transfer(accounts[2], 122500 * 1000);
+      await token.transfer(accounts[3], 122500 * 1000);
+      await token.transfer(accounts[4], 122500 * 1000);
+      // 4 holders now, let's remove them all
+      let gas1 = (await token.transfer(accounts[0], 122500 * 1000, {from: accounts[1]})).receipt.gasUsed;
+      let gas2 = (await token.transfer(accounts[0], 122500 * 1000, {from: accounts[2]})).receipt.gasUsed;
+      let gas3 = (await token.transfer(accounts[0], 122500 * 1000, {from: accounts[3]})).receipt.gasUsed;
+      let gas4 = (await token.transfer(accounts[0], 122500 * 1000, {from: accounts[4]})).receipt.gasUsed;
+      
+      ((gas1+gas2+gas3+gas4)/4).should.be.bignumber.lessThan(80000);
+
+      // Now try with one
+      token = await IcoPassToken.new(accounts[0]);
+      let gas = (await token.transfer(accounts[1], 490000 * 1000)).receipt.gasUsed;
+
+      gas.should.be.bignumber.lessThan(80000);
+    });
+
+    it("has a transfer gas cost below a known, expected threshold", async function () {
+      /*
+      transfer() manages a list of holders, so it is more expensive
+      than a regular ERC20 token. It can potentially be affected
+      by the existing state of holders:
+      - if somebody (after transfer) has a balance of 0, they are removed from the holder list
+      - if the recipient is a new holder, they are appended to the holder list
+
+      This test makes sure that the holder list is updated continuously (4 holders, where 1 is
+      constantly being removed, over 20 iterations), and verifies the last transfer cost.
+      */
+      let iterations = 20;
+      var holders = [];
+      let requiredKeyCount = Math.min(4, accounts.length - 1);
+      let tokenCount = (10000 / requiredKeyCount)
+
+      for (var i = 1; i <= requiredKeyCount; ++i) {
+        let newHolder = accounts[i];
+        
+        var transferTx = await token.transfer(newHolder, tokenCount * 1000);
+        holders.push(newHolder);
+      }
+
+      var tx;
+      for (i = 0; i < iterations; ++i) {
+        let fromIx = i % holders.length
+        let toIx = (i+1) % holders.length
+        let from = holders[fromIx]
+        let to = holders[toIx]
+        
+        tx = await token.transfer(to, tokenCount * 1000, {from: from})
+        tx.receipt.gasUsed.should.be.bignumber.lessThan(150000);
+      }
+    });
+  });
+
   describe('payment distribution among holders', function () {
     it("should not accept payments with no value", async function() {
       try {
@@ -119,9 +183,9 @@ contract('IcoPassToken', function (accounts) {
         var preDividendBalance2 = await web3.eth.getBalance(accounts[2]);
         var preDividendBalance3 = await web3.eth.getBalance(accounts[3]);
 
-        await token.transfer(accounts[1], 1000000); // 10%
-        await token.transfer(accounts[2], 4000000); // 40%
-        await token.transfer(accounts[3], 5000000); // 50%
+        await token.transfer(accounts[1], 49000 * 1000); // 10%
+        await token.transfer(accounts[2], 196000 * 1000); // 40%
+        await token.transfer(accounts[3], 245000 * 1000); // 50%
 
         await token.distributeAmongHolders({value: 100});
         
@@ -134,22 +198,22 @@ contract('IcoPassToken', function (accounts) {
         preDividendBalance3.plus(50).should.be.bignumber.equal(postDividendBalance3);
     })
 
-    it("should have a transaction fee in the expected range", async function () {
-      let iterations = 50;
-      let tokenCount = (10000 / iterations)
+    it("should have an expected transaction fee for 10 token holders", async function () {
+      // Ideally, this should test more holders, but it is a very slow test
+      let iterations = 10;
+      let tokenCount = (490000 / iterations)
       for (var i = 0; i < iterations; ++i) {
         await token.transfer(randomAddress(), tokenCount * 1000); 
       }
-      let gasPrice = 1000000000; // fixed gas price for fee calculation
-      let tx = await token.distributeAmongHolders({value: 10000000, gasPrice: gasPrice});
-      let expectedFee = (tx.receipt.gasUsed * gasPrice); 
-      expectedFee.should.be.bignumber.lessThan(1800000000000000);
+      
+      let tx = await token.distributeAmongHolders({value: 490000 * 1000, gas: 100000000});
+      tx.receipt.gasUsed.should.be.bignumber.lessThan(3600000);
     })
 
-    it("should fail value can not be split exactly", async function() {
-      await token.transfer(accounts[1], 1100000); // 11%
-      await token.transfer(accounts[2], 4000000); // 40%
-      await token.transfer(accounts[3], 4900000); // 49%
+    it("should fail if value can not be split exactly", async function() {
+      await token.transfer(accounts[1], 53900 * 1000); // 11%
+      await token.transfer(accounts[2], 196000 * 1000); // 40%
+      await token.transfer(accounts[3], 240100 * 1000); // 49%
       
       // 101 will be split into 11, 40 and 49. 1 wei is left over
       try {
@@ -169,19 +233,19 @@ contract('IcoPassToken', function (accounts) {
       assert.equal(preApproved, 0);
     });
 
-    it('should increase by 50 then decrease by 10', async function () {
-      await token.increaseApproval(accounts[1], 5000000);
+    it('should increase by 50% then decrease by 10%', async function () {
+      await token.increaseApproval(accounts[1], 5000 * 1000);
       let postIncrease = await token.allowance(accounts[0], accounts[1]);
-      preApproved.plus(5000000).should.be.bignumber.equal(postIncrease);
-      await token.decreaseApproval(accounts[1], 1000000);
+      preApproved.plus(5000 * 1000).should.be.bignumber.equal(postIncrease);
+      await token.decreaseApproval(accounts[1], 1000 * 1000);
       let postDecrease = await token.allowance(accounts[0], accounts[1]);
-      postIncrease.minus(1000000).should.be.bignumber.equal(postDecrease);
+      postIncrease.minus(1000 * 1000).should.be.bignumber.equal(postDecrease);
     });
   });
 
-  it('should increase by 50 then set to 0 when decreasing by more than 50', async function () {
-    await token.approve(accounts[1], 5000000);
-    await token.decreaseApproval(accounts[1], 6000000);
+  it('should increase by 50% then set to 0 when decreasing by more than 50%', async function () {
+    await token.approve(accounts[1], 5000 * 1000);
+    await token.decreaseApproval(accounts[1], 6000 * 1000);
     let postDecrease = await token.allowance(accounts[0], accounts[1]);
     assert.equal(postDecrease, 0);
   });
