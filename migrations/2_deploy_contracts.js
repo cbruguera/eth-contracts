@@ -28,23 +28,23 @@ module.exports = function(deployer) {
   // test.key
   let adminAddress = "0x5F9508555c8bbD32CfF8aA59774f69AfDF66710E";
 
-  deployer.deploy(IcoPassToken, treasuryAddress).then(async _ => {
-    let tokenContract = await IcoPassToken.deployed();
-    let claimRegistry = await ClaimRegistry.deployed();
-    let totalSupply = 1.0 * (await tokenContract.INITIAL_SUPPLY()).toNumber();
-    let tokenDecimals = 1.0 * (await tokenContract.decimals()).toNumber();
+  // deployer.deploy(IcoPassToken, treasuryAddress).then(async _ => {
+  //   let tokenContract = await IcoPassToken.deployed();
+  //   let claimRegistry = await ClaimRegistry.deployed();
+  //   let totalSupply = 1.0 * (await tokenContract.INITIAL_SUPPLY()).toNumber();
+  //   let tokenDecimals = 1.0 * (await tokenContract.decimals()).toNumber();
 
-    let tokenCap = Math.ceil(0.4 * totalSupply / (Math.pow(10, tokenDecimals)))
+  //   let tokenCap = Math.ceil(0.4 * totalSupply / (Math.pow(10, tokenDecimals)))
     
-    //await deployer.deploy(SecondPriceAuction, 
-    //   claimRegistry.address, 
-    //   tokenContract.address, 
-    //   treasuryAddress,
-    //   adminAddress,
-    //   Math.floor(new Date() / 1000),  // start now
-    //   tokenCap
-    // );  
-  });
+  //   //await deployer.deploy(SecondPriceAuction, 
+  //   //   claimRegistry.address, 
+  //   //   tokenContract.address, 
+  //   //   treasuryAddress,
+  //   //   adminAddress,
+  //   //   Math.floor(new Date() / 1000),  // start now
+  //   //   tokenCap
+  //   // );  
+  // });
   
    deployer.then(async _ => {
     let nsf = await NameStorageFacade.deployed();

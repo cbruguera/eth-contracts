@@ -9,97 +9,105 @@ contract IcoPassToken is StandardToken, DSMath {
   string public constant name = "IcoPassToken";
   string public constant symbol = "NIP";
   uint8 public constant decimals = 3;
-
   uint256 public constant INITIAL_SUPPLY = 490000 * (10 ** uint256(decimals));
 
-  event UnaccountedFor(int256 valu);
-  event Transferring(address recipient, uint transfer, uint holderBalance);
-  event GotDividends(uint amt);
+  uint private totalDeposited = 0;
+  mapping (address => uint) private totalDepositedAtCycleStart;
+  mapping (address => uint) private pendingDividends;
 
-  // 0 is unset
-  address[] holders;
-  mapping(address => uint) holderIndices;
-  uint holderCount;
-
+  event DividendsDeposited(uint amt);
+  event DividendsWithdrawn(address recipient, uint amt);
+  
   /**
    * @dev Constructor that gives msg.sender all of existing tokens.
    */
   function IcoPassToken(address _treasury) public {
     totalSupply = INITIAL_SUPPLY;
     balances[_treasury] = INITIAL_SUPPLY;
-
-    // 0 means 'unset', so ensure 0 index points to an invalid address
-    holders.push(0x0);
-    holderIndices[0x0] = 0;
-
-    ensureHolderRegistered(_treasury);
   }
 
-  function ensureHolderRegistered(address holder) public {
-    require(holder != 0x0);
+  modifier requiresValueDivisibleBySupply() {
+    require(msg.value >= INITIAL_SUPPLY);
+    uint valuePerToken = msg.value / INITIAL_SUPPLY;
+    uint processableAmount = valuePerToken * INITIAL_SUPPLY;
 
-    uint ix = holderIndices[holder];
-    if (ix != 0) { return; }
+    require(processableAmount == msg.value);
 
-    holders.push(holder);
-    holderIndices[holder] = holders.length - 1;
-    holderCount += 1;
+    _;
   }
 
-  function ensureHolderPurged(address holder) public {
-    require(holder != 0x0);
-
-    uint ix = holderIndices[holder];
-    if (ix == 0) { return; }
-
-    delete holders[ix];
-    holderIndices[holder] = 0;
-    holderCount -= 1;
-  }
-
-  function transfer(address _to, uint256 _value) public returns (bool) {
+  function transfer(address _to, uint256 _value) 
+    assignsPendingDividendsAndResetCycle(msg.sender) 
+    assignsPendingDividendsAndResetCycle(_to) 
+    public 
+    returns (bool) 
+  {
     super.transfer(_to, _value);
-    
-    updateHolderRegistration(msg.sender);
-    updateHolderRegistration(_to);
   }
 
-  function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+  function transferFrom(address _from, address _to, uint256 _value) 
+    assignsPendingDividendsAndResetCycle(_from) 
+    assignsPendingDividendsAndResetCycle(_to) 
+    public 
+    returns (bool) 
+  {
     super.transferFrom(_from, _to, _value);
-    
-    updateHolderRegistration(_from);
-    updateHolderRegistration(_to);
   }
 
-  function updateHolderRegistration(address _holder) internal {
-    if (balances[_holder] > 0) { ensureHolderRegistered(_holder); }
-    if (balances[_holder] <= 0) { ensureHolderPurged(_holder); }
+  function withdrawDividends() 
+    public 
+    assignsPendingDividendsAndResetCycle(msg.sender) 
+    withdrawPending(msg.sender) 
+  {
   }
+  
+  // modifier withdrawsPending(address holder) {
+  //   uint pendingAmount = owedToHolder(holder);
+  //   totalWithdrawnInclPending += pendingAmount;
+  //   pendingWithdrawal[holder] = pendingAmount;
 
-  function distributeAmongHolders() public payable {
-    require(msg.value > 0);
+  //   PendingDividendsWithdrawn(holder, pendingAmount);
 
-    uint accountedFor = 0;
-    GotDividends(msg.value);
+  //   _;
+  // }
 
-    for (uint i = 0; i < holders.length; ++i) {
-      address holder = holders[i];
-      if (holder == 0x0) { continue; }
-      
-      uint ix = holderIndices[holder];
-      if (ix == 0) { continue; }
+  modifier withdrawPending(address holder) {
+    uint owed = pendingDividends[holder];
+    if (owed > 0) {
+      holder.transfer(owed);
+      pendingDividends[holder] = 0;
 
-      uint holderBalance = balances[holder];
-
-      uint holderShare = wdiv(holderBalance, INITIAL_SUPPLY);
-      uint holderValue = wmul(msg.value, holderShare);
-      accountedFor += holderValue;
-    
-      holder.transfer(holderValue);
-      Transferring(holder, holderValue, balances[holder]);
+      DividendsWithdrawn(holder, owed);
     }
 
-    require(int(msg.value) - int(accountedFor) == 0);
+    _;
   }
 
+  modifier assignsPendingDividendsAndResetCycle(address holder) {
+    uint owed = owedToHolder(holder);
+    pendingDividends[holder] += owed;
+
+    totalDepositedAtCycleStart[holder] = totalDeposited;
+
+    _;
+  }
+
+  function owedToHolder(address holder) internal constant returns (uint) {
+    uint tokenBalance = balances[holder];
+    uint accumulatedDividendsDuringCycle = totalDeposited -  totalDepositedAtCycleStart[holder];
+
+    uint holderShare = wdiv(tokenBalance, INITIAL_SUPPLY);
+    uint holderValue = wmul(accumulatedDividendsDuringCycle, holderShare);
+
+    return holderValue;
+  }
+
+  function depositDividends() public payable requiresValueDivisibleBySupply() {
+    DividendsDeposited(msg.value);
+    totalDeposited += msg.value;
+  }
+
+  function () public payable {
+    depositDividends();
+  }
 }
