@@ -7,19 +7,19 @@ library NameStorageLib {
         uint nameCount;
     }
 
-    function getNameCount(Store storage self) constant returns (uint) {
+    function getNameCount(Store storage self) public constant returns (uint) {
         return self.nameCount;
     }
 
-    function getNameChunkCount(Store storage self, uint ix) constant returns (uint) {
+    function getNameChunkCount(Store storage self, uint ix) public constant returns (uint) {
         return self.ixToName[ix].length;
     }
 
-    function getNameChunkAt(Store storage self, uint ix, uint chunkIndex) constant returns (bytes32) {
+    function getNameChunkAt(Store storage self, uint ix, uint chunkIndex) public constant returns (bytes32) {
         return self.ixToName[ix][chunkIndex];
     }
 
-    function getNameIndex(Store storage self, bytes32[] schemaNameParts) constant returns (int) {
+    function getNameIndex(Store storage self, bytes32[] schemaNameParts) public constant returns (int) {
         bytes memory schemaName = bytes32ArrayToBytes(schemaNameParts);
 
         // start from 1, because 0 means uninitialized
@@ -32,7 +32,7 @@ library NameStorageLib {
         return -1;
     }
 
-    function submitName(Store storage self, bytes32[] schemaNameParts) returns (bytes32, uint) {
+    function submitName(Store storage self, bytes32[] schemaNameParts) public returns (bytes32, uint) {
         require(getNameIndex(self, schemaNameParts) == -1);
 
         var newIx = self.nameCount + 1; // index 0 should mean uninitialized
@@ -44,7 +44,7 @@ library NameStorageLib {
         return (keccak256(schemaName), newIx);
     }
 
-    function bytes32ArrayToBytes (bytes32[] data) constant returns (bytes) {
+    function bytes32ArrayToBytes (bytes32[] data) private pure returns (bytes) {
         bytes memory bytesString = new bytes(data.length * 32);
         uint urlLength;
         for (uint i=0; i<data.length; i++) {

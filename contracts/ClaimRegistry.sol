@@ -15,13 +15,11 @@ contract ClaimRegistry is Destroyable {
     address _nameStorageFacade;
 
     event TerminatedLinkage(address indexed subject, address indexed linkedAddress, uint linkCount);
-    
     event GotLinkage(address indexed subject, address indexed linkedAddress, bytes32 proofHash, uint linkCount);
-    
     event GotClaim(address indexed subject, uint typeIx, uint attrIx, uint urlIx);
 
 
-    function ClaimRegistry(address keyProofs, address nameStorageFacade) {
+    function ClaimRegistry(address keyProofs, address nameStorageFacade) public {
         _keyProofsAddr = keyProofs;
         _nameStorageFacade = nameStorageFacade;
     }   
@@ -163,37 +161,37 @@ contract ClaimRegistry is Destroyable {
      }
 
 
-    function getSubjectTypeCount(address subject) constant returns (uint) {
+    function getSubjectTypeCount(address subject) public constant returns (uint) {
         return subjectTypeIndexes[subject].length;
     }
 
-    function getSubjectTypeAttrCount(address subject, uint typeNameIx) constant returns (uint) {
+    function getSubjectTypeAttrCount(address subject, uint typeNameIx) public constant returns (uint) {
         return subjectTypeClaimIndexes[subject][typeNameIx].length;
     }
 
-    function getSubjectTypeAt(address subject, uint ix) constant returns (uint) {
+    function getSubjectTypeAt(address subject, uint ix) public constant returns (uint) {
         return subjectTypeIndexes[subject][ix];
     }
 
-    function getSubjectTypeAttrAt(address subject, uint typeNameIx, uint ix) constant returns (uint) {
+    function getSubjectTypeAttrAt(address subject, uint typeNameIx, uint ix) public constant returns (uint) {
         return subjectTypeClaimIndexes[subject][typeNameIx][ix];
     }
 
-    function getSubjectClaimSetSize(address subject, uint typeNameIx, uint attrNameIx) constant returns (uint) {
+    function getSubjectClaimSetSize(address subject, uint typeNameIx, uint attrNameIx) public constant returns (uint) {
         return subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].urls.length;
     }
 
-    function getSubjectClaimSetEntryAt(address subject, uint typeNameIx, uint attrNameIx, uint ix) constant returns (address issuer, uint url)
+    function getSubjectClaimSetEntryAt(address subject, uint typeNameIx, uint attrNameIx, uint ix) public constant returns (address issuer, uint url)
     {
         issuer = subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].issuers[ix];
         url = subjectToTypeToAttrToClaims[subject][typeNameIx][attrNameIx].urls[ix];
     }
 
-    function getKeyProofsAddress() constant returns(address) {
+    function getKeyProofsAddress() public constant returns(address) {
         return _keyProofsAddr;
     }
 
-    function doThrow() {
+    function doThrow() private pure {
         assert(false);
     }
  }

@@ -79,7 +79,7 @@ contract('TestVerifier', function(accounts) {
             let aut = accounts[0]; // account under test should be 0 so that key proving is not required
     
             let blacklist = 0;
-            var result = await testVerifier._preventedByNationalityBlacklist(aut, blacklist);
+            var result = await testVerifier.test_preventedByNationalityBlacklist(aut, blacklist);
             
             assert.ok(!result);
         });
@@ -92,7 +92,7 @@ contract('TestVerifier', function(accounts) {
             
             await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, countryIndex);
 
-            var result = await testVerifier._preventedByNationalityBlacklist(aut, blacklist);
+            var result = await testVerifier.test_preventedByNationalityBlacklist(aut, blacklist);
             
             assert.equal(result, false);
         });
@@ -105,7 +105,7 @@ contract('TestVerifier', function(accounts) {
             
             await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, countryIndex);
 
-            var result = await testVerifier._preventedByNationalityBlacklist(aut, blacklist);
+            var result = await testVerifier.test_preventedByNationalityBlacklist(aut, blacklist);
             
             assert.ok(result);
         });
@@ -117,7 +117,7 @@ contract('TestVerifier', function(accounts) {
         it("detects lack of ICO contributor type", async function() {
             let aut = accounts[0]; // account under test should be 0 so that key proving is not required
     
-            var result = await testVerifier._hasIcoContributorType(aut);
+            var result = await testVerifier.test_hasIcoContributorType(aut);
             assert.ok(!result);
         });
     
@@ -127,7 +127,7 @@ contract('TestVerifier', function(accounts) {
             await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, dummyNameIx);
             await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
             
-            var result = await testVerifier._hasIcoContributorType(aut);
+            var result = await testVerifier.test_hasIcoContributorType(aut);
             assert.ok(result);
         });
 
@@ -139,7 +139,7 @@ contract('TestVerifier', function(accounts) {
 
             modifiedTestVerifier = await TestVerifier.new(accounts[1], claimRegistry.address);
             
-            var result = await modifiedTestVerifier._hasIcoContributorType(aut);
+            var result = await modifiedTestVerifier.test_hasIcoContributorType(aut);
             assert.ok(!result);
         });
 
@@ -148,7 +148,7 @@ contract('TestVerifier', function(accounts) {
     
             await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
             
-            var result = await testVerifier._hasIcoContributorType(aut);
+            var result = await testVerifier.test_hasIcoContributorType(aut);
             assert.ok(!result);
         });
 
@@ -157,7 +157,7 @@ contract('TestVerifier', function(accounts) {
     
             await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, dummyNameIx);
             
-            var result = await testVerifier._hasIcoContributorType(aut);
+            var result = await testVerifier.test_hasIcoContributorType(aut);
             assert.ok(!result);
         });
 
