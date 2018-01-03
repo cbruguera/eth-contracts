@@ -107,7 +107,7 @@ contract IcoPassToken is StandardToken, DSMath {
     totalDeposited += msg.value;
   }
 
-  function () payable {
+  function () public payable {
     depositDividends();
   }
 }
