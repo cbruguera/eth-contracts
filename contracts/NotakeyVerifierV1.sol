@@ -10,6 +10,7 @@ contract NotakeyVerifierV1 {
 
     address public claimRegistryAddr;
     address public trustedIssuerAddr;
+    // address private callerIdentitySubject;
 
     uint public constant USA = 883423532389192164791648750371459257913741948437809479060803100646309888;                
         // USA is 240nd; blacklist: 1 << (240-1)
@@ -29,7 +30,7 @@ contract NotakeyVerifierV1 {
 
         _;
     }
-
+    
     function isVerified(address subject, uint256 nationalityBlacklist) public constant onlyVerifiedSenders(subject, nationalityBlacklist) returns (bool) {
         return true;
     }
@@ -61,6 +62,10 @@ contract NotakeyVerifierV1 {
 
         return false;
     }   
+
+    function _lookupOwnerIdentityAddress(address subject) internal constant returns (address){
+        var claimRegistry = ClaimRegistry(claimRegistryAddr);
+    }
 
     function _hasIcoContributorType(address subject) internal constant returns (bool)
     {
