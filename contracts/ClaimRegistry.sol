@@ -224,6 +224,8 @@ contract ClaimRegistry is Destroyable {
 
         subjectIxTolinkedAddrIx[sIx].linkHashMaps[linkageCount] = txHash;
 
+        linkedAddrIxToSubjectIx[lIx].push(sIx);
+
         linkageCount++;
 
         GotLinkage(subject, linkedAddress, txHash, linkageCount);     
@@ -244,25 +246,47 @@ contract ClaimRegistry is Destroyable {
         require(_hasLink(sIx, lIx));
         
         linkageCount = _linkCountByIx(sIx);
-        
-        uint[] memory newLinkages;
+        linkageCount--;
+
         uint i = 0; 
-        uint delIndex = 0;
+        if(linkageCount > 0){
+            uint[] memory newLinkIx = new uint[](linkageCount);
+            uint delIndex = 0;
 
-        while (i < newLinkages.length){
-            if(newLinkages[i] == lIx){
-                delIndex = i;
-                continue;
-            } 
+            while (i <= linkageCount){
+                if(subjectIxTolinkedAddrIx[sIx].linkedAddressesIx[i] == lIx){
+                    delIndex = i;
+                    continue;
+                }
 
-            newLinkages[i] = subjectIxTolinkedAddrIx[sIx].linkedAddressesIx[i];
-            i++;
+                newLinkIx[i] = subjectIxTolinkedAddrIx[sIx].linkedAddressesIx[i];
+                i++;
+            }
+
+            subjectIxTolinkedAddrIx[sIx].linkHashMaps[delIndex] = emptyVar; 
+            subjectIxTolinkedAddrIx[sIx].linkedAddressesIx = newLinkIx;
+        }else{
+            delete(subjectIxTolinkedAddrIx[sIx]); 
         }
 
-        subjectIxTolinkedAddrIx[sIx].linkedAddressesIx = newLinkages;
-        subjectIxTolinkedAddrIx[sIx].linkHashMaps[delIndex] = emptyVar;
+        uint _arrLength = linkedAddrIxToSubjectIx[lIx].length; //most of the time this is 1
+        _arrLength--;
 
-        linkageCount--;
+        if(_arrLength == 0){
+             delete(linkedAddrIxToSubjectIx[lIx]);
+        }else{
+            uint[] memory newSubjectIx = new uint[](_arrLength - 1);
+
+            for ( i = 0 ; i <= _arrLength ; i++ ){
+                if(linkedAddrIxToSubjectIx[lIx][i] == sIx){
+                    continue;
+                }
+                newSubjectIx[i] = linkedAddrIxToSubjectIx[lIx][i];
+            }
+            
+            linkedAddrIxToSubjectIx[lIx] = newSubjectIx;
+        }
+       
 
         TerminatedLinkage(subject, linkedAddress, linkageCount);
     }
