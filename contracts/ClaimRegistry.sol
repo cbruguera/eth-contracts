@@ -234,8 +234,6 @@ contract ClaimRegistry is Destroyable {
     function terminateLinkage(address linkedAddress) public returns(uint linkageCount) {
         address subject = msg.sender;
 
-        bytes32 emptyVar;
-
         uint sIx = _saddrAdd(subject);
         require(sIx > 0);
 
@@ -249,18 +247,20 @@ contract ClaimRegistry is Destroyable {
         linkageCount--;
 
         uint i = 0; 
+        uint j; 
         if(linkageCount > 0){
             uint[] memory newLinkIx = new uint[](linkageCount);
             uint delIndex = 0;
+            bytes32 emptyVar;
 
-            while (i <= linkageCount){
+            j = 0; 
+            for ( i = 0 ; i <= linkageCount ; i++ ){
                 if(subjectIxTolinkedAddrIx[sIx].linkedAddressesIx[i] == lIx){
                     delIndex = i;
                     continue;
                 }
-
-                newLinkIx[i] = subjectIxTolinkedAddrIx[sIx].linkedAddressesIx[i];
-                i++;
+                newLinkIx[j] = subjectIxTolinkedAddrIx[sIx].linkedAddressesIx[i];
+                j++;
             }
 
             subjectIxTolinkedAddrIx[sIx].linkHashMaps[delIndex] = emptyVar; 
@@ -275,13 +275,15 @@ contract ClaimRegistry is Destroyable {
         if(_arrLength == 0){
              delete(linkedAddrIxToSubjectIx[lIx]);
         }else{
-            uint[] memory newSubjectIx = new uint[](_arrLength - 1);
+            uint[] memory newSubjectIx = new uint[](_arrLength);
 
+            j = 0; 
             for ( i = 0 ; i <= _arrLength ; i++ ){
                 if(linkedAddrIxToSubjectIx[lIx][i] == sIx){
                     continue;
                 }
-                newSubjectIx[i] = linkedAddrIxToSubjectIx[lIx][i];
+                newSubjectIx[j] = linkedAddrIxToSubjectIx[lIx][i];
+                j++;
             }
             
             linkedAddrIxToSubjectIx[lIx] = newSubjectIx;
