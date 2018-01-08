@@ -126,10 +126,26 @@ contract ClaimRegistry is Destroyable {
         return false;
     }
 
+    function getSubjectCountByAddress(address linkedAddress) public view returns(uint subjectCount) {
+        var subjects = getSubjectsByAddress(linkedAddress);
+
+        return subjects.length;
+    }
+
+    function getSingleSubjectByAddress(address linkedAddress, uint subjectIndex) public view returns(address subject) {
+        var subjects = getSubjectsByAddress(linkedAddress);
+
+        return subjects[subjectIndex];
+    }
+
     function getSubjectsByAddress(address linkedAddress) public view returns(address[] subjects) {
         uint lIx = _laddrGetIx(linkedAddress);
-
-        require(lIx > 0);
+        // We dont want to throw here as customer might have installed a special handler 
+        // if address is not registered 
+        // require(lIx > 0);
+        if (lIx == 0) {
+            return new address[](0);
+        }
 
         uint _arrLength = linkedAddrIxToSubjectIx[lIx].length;
         address[] memory _laddrs = new address[](_arrLength);

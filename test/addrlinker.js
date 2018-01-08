@@ -109,7 +109,9 @@ contract('ClaimRegistry', function(accounts) {
     // negative test
     var threw = false;
     var addrsE = await claimRegistry.getSubjectsByAddress.call(accounts[3]).catch(_ => threw = true);
-    assert.equal(threw, true, "No result for random address");
+    assert.equal(threw, false, "getSubjectsByAddress should never throw");
+    assert.equal(addrsE.length == 0, true, "getSubjectsByAddress must return empty array");
+    
   });
 
   it("allows anyone to query subject addresses by linked address", async function() {
