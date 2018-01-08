@@ -128,13 +128,13 @@ contract('ClaimRegistry', function(accounts) {
     assert.equal(threw, false, "Linkage for subject2 should succeed");
     
     var addrsA = await claimRegistry.getSubjectsByAddress.call(accounts[2]);
-    console.log(addrsA);
+    // console.log(addrsA);
 
     assert.equal(addrsA.constructor === Array, true);
     assert.equal(addrsA.length === 2, true);
   
     var addrsB = await claimRegistry.getSubjectsByAddress.call(accounts[1]);
-    console.log(addrsB);
+    // console.log(addrsB);
 
     assert.equal(addrsB.constructor === Array, true);
     assert.equal(addrsB.length === 2, true);
