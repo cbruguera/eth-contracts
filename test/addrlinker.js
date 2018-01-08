@@ -115,21 +115,26 @@ contract('ClaimRegistry', function(accounts) {
   it("allows anyone to query subject addresses by linked address", async function() {
     var subject1 = accounts[0];
     var subject2 = accounts[3];
+    var threw = false;
 
-    await claimRegistry.submitLinkage( accounts[1], 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject1});
-    await claimRegistry.submitLinkage( accounts[2], 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject1});
+    await claimRegistry.submitLinkage( accounts[1], 0xa64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject1}).catch(_ => threw = true);
+    assert.equal(threw, false, "Linkage for subject1 should succeed");
+    await claimRegistry.submitLinkage( accounts[2], 0xb64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject1}).catch(_ => threw = true);
+    assert.equal(threw, false, "Linkage for subject1 should succeed");
     
-    await claimRegistry.submitLinkage( accounts[1], 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject2});
-    await claimRegistry.submitLinkage( accounts[2], 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject2});
+    await claimRegistry.submitLinkage( accounts[1], 0xc64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject2}).catch(_ => threw = true);
+    assert.equal(threw, false, "Linkage for subject2 should succeed");
+    await claimRegistry.submitLinkage( accounts[2], 0xd64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subject2}).catch(_ => threw = true);
+    assert.equal(threw, false, "Linkage for subject2 should succeed");
     
     var addrsA = await claimRegistry.getSubjectsByAddress.call(accounts[2]);
-    // console.log(addrsA);
+    console.log(addrsA);
 
     assert.equal(addrsA.constructor === Array, true);
     assert.equal(addrsA.length === 2, true);
   
     var addrsB = await claimRegistry.getSubjectsByAddress.call(accounts[1]);
-    // console.log(addrsB);
+    console.log(addrsB);
 
     assert.equal(addrsB.constructor === Array, true);
     assert.equal(addrsB.length === 2, true);

@@ -23,9 +23,9 @@ contract ClaimRegistry is Destroyable {
         _keyProofsAddr = keyProofs;
         _nameStorageFacade = nameStorageFacade;
         
+        // Initialize 0 index with empty  value to start valid indexes from 1
         address a;
-        linkedAddressIndex.push(a);
-        subjectAddressIndex.push(a);
+        globalAddressIndex.push(a);
     }   
     
     struct ClaimSetV1 {
@@ -49,78 +49,69 @@ contract ClaimRegistry is Destroyable {
     //   linkedAddressIx => subjectIx[]
     mapping (uint => uint[])  linkedAddrIxToSubjectIx; 
    
-    address[] linkedAddressIndex;
-    address[] subjectAddressIndex;
+    address[] globalAddressIndex;
+    mapping (address => uint) globalAddressHelper;
 
 
     function getLinkageCount(address subject) public view returns(uint linkageCount) {
        
-        uint sIx = _saddrGetIx(subject);
+        uint sIx = _laddrGetIx(subject);
 
         require(sIx > 0);
         
         return _linkCountByIx(sIx);
     }
 
-    function getSubjectsByAddress(address linkedAddress) public view returns(address[] subjects) {
-        uint lIx = _laddrGetIx(linkedAddress);
-
-        require(lIx > 0);
-
-        uint _arrLength = linkedAddrIxToSubjectIx[lIx].length;
-        address[] memory _laddrs = new address[](_arrLength);
-
-        for (uint i = 0 ; i < _arrLength ; i++ ){
-            _laddrs[i] = subjectAddressIndex[linkedAddrIxToSubjectIx[lIx][i]];
-        }
-
-        return _laddrs;
-    }
-
+    
     function _linkCountByIx( uint sIx) public view returns(uint linkCount) {
         return subjectIxTolinkedAddrIx[sIx].linkedAddressesIx.length;
     }
 
-    function _laddrAdd(address linkedAddress) private returns (uint laddrIx) {
-        laddrIx = _laddrGetIx(linkedAddress);
+    function _laddrAddOrGetIx(address myAddress) private returns (uint laddrIx) {
+        laddrIx = _laddrGetIx(myAddress);
 
         if(laddrIx > 0){
             return laddrIx;
         }
 
-        laddrIx = linkedAddressIndex.length;
+        laddrIx = globalAddressIndex.length;
 
-        linkedAddressIndex.push(linkedAddress);
+        globalAddressHelper[myAddress] = laddrIx;
+        globalAddressIndex.push(myAddress);
     }
 
-    function _laddrRemove(address linkedAddress) private {
-        uint lIx = _laddrGetIx(linkedAddress);
+    function _laddrRemove(address myAddress) private {
+        uint lIx = _laddrGetIx(myAddress);
 
         require(lIx > 0);
 
-        delete(linkedAddressIndex[lIx]);
+        globalAddressHelper[myAddress] = 0; 
+        delete(globalAddressIndex[lIx]);
     }
 
-    function _laddrGetIx(address linkedAddress) private view returns (uint laddrIx){
-
-        for (uint i = 0 ; i < linkedAddressIndex.length ; i++ ){
-            if (linkedAddressIndex[i] == linkedAddress){
-                return i;
-            }
-        }
-
-        return 0;
-    }
-
-    function _saddrGetIx(address subject) private view returns (uint saddrIx){
+    function _laddrGetIx(address myAddress) private view returns (uint laddrIx){
         
-        for (uint i = 0 ; i < subjectAddressIndex.length ; i++ ){
-            if (subjectAddressIndex[i] == subject){
-                return i;
-            }
+        if (globalAddressHelper[myAddress] > 0){
+            return globalAddressHelper[myAddress];
         }
+        
+        // legacy 
+        // for (uint i = 0 ; i < globalAddressIndex.length ; i++ ){
+        //     if (globalAddressIndex[i] == myAddress){
+        //         return i;
+        //     }
+        // }
 
         return 0;
+    }
+
+    function _laddrGetAddr(uint laddrIx) private view returns (address myAddress){
+
+        require(laddrIx > 0);
+
+        require(globalAddressIndex.length > laddrIx);
+
+        return globalAddressIndex[laddrIx]; 
     }
 
     function _hasLink(uint sIx, uint lIx) private view returns (bool link){
@@ -135,30 +126,23 @@ contract ClaimRegistry is Destroyable {
         return false;
     }
 
-    function _saddrAdd(address subject) private returns (uint saddrIx) {
+    function getSubjectsByAddress(address linkedAddress) public view returns(address[] subjects) {
+        uint lIx = _laddrGetIx(linkedAddress);
 
-        saddrIx = _saddrGetIx(subject);
+        require(lIx > 0);
 
-        if(saddrIx > 0){
-            return saddrIx;
+        uint _arrLength = linkedAddrIxToSubjectIx[lIx].length;
+        address[] memory _laddrs = new address[](_arrLength);
+
+        for (uint i = 0 ; i < _arrLength ; i++ ){
+            _laddrs[i] = _laddrGetAddr(linkedAddrIxToSubjectIx[lIx][i]);
         }
 
-        saddrIx = subjectAddressIndex.length;
-
-        subjectAddressIndex.push(subject);
-        
-    }
-
-    function _saddrRemove(address subject) private {
-        uint sIx = _saddrGetIx(subject);
-
-        require(sIx > 0);
-
-        delete(subjectAddressIndex[sIx]);
+        return _laddrs;
     }
 
     function getLinkages(address subject) public view returns(address[] linkedAddresses) {
-        uint sIx = _saddrGetIx(subject);
+        uint sIx = _laddrGetIx(subject);
 
         require(sIx > 0);
 
@@ -166,7 +150,7 @@ contract ClaimRegistry is Destroyable {
         address[] memory _laddrs = new address[](_arrLength);
 
         for (uint i = 0 ; i < _arrLength ; i++ ){
-            _laddrs[i] = linkedAddressIndex[subjectIxTolinkedAddrIx[sIx].linkedAddressesIx[i]];
+            _laddrs[i] = _laddrGetAddr(subjectIxTolinkedAddrIx[sIx].linkedAddressesIx[i]);
         }
 
         return _laddrs;
@@ -178,7 +162,7 @@ contract ClaimRegistry is Destroyable {
         uint _arrLength = _addrLinks.length;
         bytes32[] memory _proofHashes = new bytes32[](_arrLength);
 
-        uint sIx = _saddrGetIx(subject);
+        uint sIx = _laddrGetIx(subject);
 
         require(sIx > 0);
 
@@ -209,10 +193,10 @@ contract ClaimRegistry is Destroyable {
 
         // require(linkedAddress == signer);
 
-        uint sIx = _saddrAdd(subject);
+        uint sIx = _laddrAddOrGetIx(subject);
         require(sIx > 0);
 
-        uint lIx = _laddrAdd(linkedAddress);
+        uint lIx = _laddrAddOrGetIx(linkedAddress);
         require(lIx > 0);
 
         // has not been linked already 
@@ -234,10 +218,10 @@ contract ClaimRegistry is Destroyable {
     function terminateLinkage(address linkedAddress) public returns(uint linkageCount) {
         address subject = msg.sender;
 
-        uint sIx = _saddrAdd(subject);
+        uint sIx = _laddrGetIx(subject);
         require(sIx > 0);
 
-        uint lIx = _laddrAdd(linkedAddress);
+        uint lIx = _laddrGetIx(linkedAddress);
         require(lIx > 0);
 
         // has been linked  
