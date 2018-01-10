@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -o errexit
+# set -o errexit
 
 TESTRPC=$(ps ax | grep bin/testrpc | grep -v grep || true)
 if [ ! -z "$TESTRPC" ]; then
@@ -27,8 +27,12 @@ echo "==> Git information"
 echo "    deploying version: $GITV"
 
 echo "==> Resetting to $GITV"
-git checkout $GITV 
+git checkout $GITV &> /dev/null
 
+f [ $? -ne 0 ]; then
+        echo "Checkout of tag $GITVfailed"
+        exit 1
+fi
 
 CV="$(git describe)" # Should match GITV
 
@@ -40,6 +44,7 @@ TRUFFLE_OUTPUT="$(truffle migrate --reset --network $NETWORK)"
 
 if [ $? -ne 0 ]; then
 	echo "Truffle migrate failed: ${TRUFFLE_OUTPUT}" 
+	git checkout "$localbranch"
 	exit 1
 fi  
 
