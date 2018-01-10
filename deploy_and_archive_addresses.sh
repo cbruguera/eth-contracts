@@ -38,6 +38,11 @@ find build/contracts -type f -exec rm "{}" \;
 echo "    migrating"
 TRUFFLE_OUTPUT="$(truffle migrate --reset --network $NETWORK)"
 
+if [ $? -ne 0 ]; then
+	echo "Truffle migrate failed: ${TRUFFLE_OUTPUT}" 
+	exit 1
+fi  
+
 echo "==> Extracting addresses"
 CONTRACTS=("$(find build/contracts -type f)")
 
