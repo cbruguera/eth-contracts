@@ -21,6 +21,8 @@ if [ -z "$GITV" ]; then
   exit 1
 fi
 
+localbranch="$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')"
+
 echo "==> Git information"
 echo "    deploying version: $GITV"
 
@@ -75,3 +77,4 @@ cp -rv build/contracts/* "$NETWORKDIR/$CV"
 git add "$NETWORKDIR"
 git commit "$NETWORKDIR" -m "Deployed v$CV addresses for $NETWORK"
 git push
+git checkout "$localbranch"
