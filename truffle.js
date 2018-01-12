@@ -7,7 +7,7 @@ module.exports = {
       gas: 4612388
     },
     rinkeby: {
-      host: "10.0.1.104", // Connect to geth on the specified
+      host: "localhost", // Connect to geth on the specified
       port: 8545,
       from: "0xd46c9b407afa991c4c510ab5ebf8959ea7409c17", // default address to use for any transaction Truffle makes during migrations
       network_id: 4,
