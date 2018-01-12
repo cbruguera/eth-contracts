@@ -29,8 +29,8 @@ echo "    deploying version: $GITV"
 echo "==> Resetting to $GITV"
 git checkout $GITV &> /dev/null
 
-f [ $? -ne 0 ]; then
-        echo "Checkout of tag $GITVfailed"
+if [ $? -ne 0 ]; then
+        echo "Checkout of tag $GITV failed"
         exit 1
 fi
 
