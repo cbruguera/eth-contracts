@@ -59,10 +59,17 @@ contract('TestVerifier', function(accounts) {
     var keyProofs;
     var names;
     var dummyNameIx;
+    var subjectAddress;
+    var walletAddress;
   
     beforeEach(async function() {
         claimRegistry = await ClaimRegistry.new(keyProofs.address, names.address);
         testVerifier = await TestVerifier.new(accounts[0], claimRegistry.address);
+
+        
+
+        
+        await claimRegistry.submitLinkage( walletAddress, 0xe64befedd9baae8150524922635405db29d971749b267d4c0428ed952faa0d36, {from: subjectAddress});
     });
 
     before(async function() {
@@ -71,41 +78,41 @@ contract('TestVerifier', function(accounts) {
 
         let dummyReceipt = await names.submitName(URL_TIX, [web3.fromAscii("dummy value")]);
         dummyNameIx = dummyReceipt.logs[0].args["nameIx"];
+
+        subjectAddress = accounts[0]; // account under test should be 0 so that key proving is not required
+        walletAddress = accounts[1]; // linked address we are running checks against
     });
 
     describe("_preventedByNationalityBlacklist", function () {
 
         it("returns false if blacklist is empty (0)", async function() {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
-    
+        
             let blacklist = 0;
-            var result = await testVerifier.test_preventedByNationalityBlacklist(aut, blacklist);
+            var result = await testVerifier.test_preventedByNationalityBlacklist(walletAddress, blacklist);
             
             assert.ok(!result);
         });
 
         it("returns false if blacklist does not prohibit the nationality index", async function() {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
-    
+           
             let blacklist = 3;
             let countryIndex = 3;
             
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, countryIndex);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, NATIONALITY_INDEX, countryIndex);
 
-            var result = await testVerifier.test_preventedByNationalityBlacklist(aut, blacklist);
+            var result = await testVerifier.test_preventedByNationalityBlacklist(walletAddress, blacklist);
             
             assert.equal(result, false);
         });
 
         it("returns true if blacklist prohibits the nationality index", async function() {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
-    
+            
             let blacklist = 8;    // raw mask
             let countryIndex = 4; // index n translates to mask 2^(n-1). Index 3 => mask 4
             
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, countryIndex);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, NATIONALITY_INDEX, countryIndex);
 
-            var result = await testVerifier.test_preventedByNationalityBlacklist(aut, blacklist);
+            var result = await testVerifier.test_preventedByNationalityBlacklist(walletAddress, blacklist);
             
             assert.ok(result);
         });
@@ -115,49 +122,44 @@ contract('TestVerifier', function(accounts) {
     describe("_hasIcoContributorType", function() {
 
         it("detects lack of ICO contributor type", async function() {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
-    
-            var result = await testVerifier.test_hasIcoContributorType(aut);
+            
+            var result = await testVerifier.test_hasIcoContributorType(walletAddress);
             assert.ok(!result);
         });
     
         it("requires report and nationality attributes signed by the trusted issuer", async function() {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
-    
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, dummyNameIx);
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
             
-            var result = await testVerifier.test_hasIcoContributorType(aut);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, NATIONALITY_INDEX, dummyNameIx);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
+            
+            var result = await testVerifier.test_hasIcoContributorType(walletAddress);
             assert.ok(result);
         });
 
         it("detects if both attributes are issued by an incorrect issuer", async function() {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
-    
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, dummyNameIx);
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
+            
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, NATIONALITY_INDEX, dummyNameIx);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
 
             modifiedTestVerifier = await TestVerifier.new(accounts[1], claimRegistry.address);
             
-            var result = await modifiedTestVerifier.test_hasIcoContributorType(aut);
+            var result = await modifiedTestVerifier.test_hasIcoContributorType(walletAddress);
             assert.ok(!result);
         });
 
         it("detects missing nationality", async function() {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
-    
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
             
-            var result = await testVerifier.test_hasIcoContributorType(aut);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
+            
+            var result = await testVerifier.test_hasIcoContributorType(walletAddress);
             assert.ok(!result);
         });
 
         it("detects missing report info", async function() {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
-    
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, dummyNameIx);
             
-            var result = await testVerifier.test_hasIcoContributorType(aut);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, NATIONALITY_INDEX, dummyNameIx);
+            
+            var result = await testVerifier.test_hasIcoContributorType(walletAddress);
             assert.ok(!result);
         });
 
@@ -165,45 +167,41 @@ contract('TestVerifier', function(accounts) {
 
     describe("modifier onlyVerifiedSenders", function() {
         it("does not allow calls without report bundle", async function () {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
             
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, 1);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, NATIONALITY_INDEX, 1);
 
             var threw = false;
-            var result = await testVerifier.vipFunction(0).catch(_ => threw = true);
+            var result = await testVerifier.vipFunction(0, {from: walletAddress}).catch(_ => threw = true);
             assert.ok(threw, "Expected function to throw");
         });
 
         it("does not allow calls without nationality index", async function () {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
             
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, 1);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, 1);
 
             var threw = false;
-            var result = await testVerifier.vipFunction(0).catch(_ => threw = true);
+            var result = await testVerifier.vipFunction(0, {from: walletAddress}).catch(_ => threw = true);
             assert.ok(threw, "Expected function to throw");
         });
 
         it("allows calls with report bundle and nationality index (allowed nationality)", async function () {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
             
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, 1);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, NATIONALITY_INDEX, 1);
 
-            await testVerifier.vipFunction(0);
+            await testVerifier.vipFunction(0, {from: walletAddress});
         });
 
         it("does not allows calls with report bundle and nationality index, if nationality is blacklisted", async function () {
-            let aut = accounts[0]; // account under test should be 0 so that key proving is not required
             
             let china = 44;
             let blacklist = 8796093022208;  // 44th bit is set (1-indexed)
 
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
-            await claimRegistry.submitClaim(aut, ICO_CONTRIBUTOR, NATIONALITY_INDEX, china);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, REPORT_BUNDLE_V1, dummyNameIx);
+            await claimRegistry.submitClaim(subjectAddress, ICO_CONTRIBUTOR, NATIONALITY_INDEX, china);
 
             var threw = false;
-            var result = await testVerifier.vipFunction(8796093022208).catch(_ => threw = true);
+            var result = await testVerifier.vipFunction(8796093022208, {from: walletAddress}).catch(_ => threw = true);
             assert.ok(threw, "Expected function to throw");
         });
     });
