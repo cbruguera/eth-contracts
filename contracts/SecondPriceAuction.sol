@@ -66,18 +66,17 @@ contract SecondPriceAuction {
 		endTime = beginTime + 28 days;
 	}
 
-	// No default function, entry-level users
-	function() public { assert(false); }
+	function() public { buyin(); }
 
 	// Public interaction:
 
 	/// Buyin function. Throws if the sale is not active and when refund would be needed.
-	function buyin(uint8 v, bytes32 r, bytes32 s)
+	function buyin()
 		public
 		payable
 		when_not_halted
 		when_active
-		only_eligible(msg.sender, v, r, s)
+		only_eligible(msg.sender)
 	{
 		flushEra();
 
@@ -294,9 +293,8 @@ contract SecondPriceAuction {
 
 	/// Ensure that the signature is valid, `who` is a certified, basic account,
 	/// the gas price is sufficiently low and the value is sufficiently high.
-	modifier only_eligible(address who, uint8 v, bytes32 r, bytes32 s) {
+	modifier only_eligible(address who) {
 		require (
-			ecrecover(STATEMENT_HASH, v, r, s) == who &&
 			verifier.isVerified(who, verifier.USA() | verifier.CHINA() | verifier.SOUTH_KOREA()) &&
 			isBasicAccount(who) &&
 			msg.value >= DUST_LIMIT
@@ -379,7 +377,7 @@ contract SecondPriceAuction {
 	bytes32 constant public STATEMENT_HASH = keccak256(STATEMENT);
 
 	/// The statement which should be signed.
-	string constant public STATEMENT = "\x19Ethereum Signed Message:\n47Please take my Ether and try to build Polkadot.";
+	string constant public STATEMENT = "\x19Ethereum Signed Message:\n47Please take my Ether and try to build ICO Pass.";
 
 	//# Statement to actually sign.
 	//# ```js
