@@ -69,7 +69,7 @@ contract SecondPriceAuction {
 		endTime = beginTime + DEFAULT_AUCTION_LENGTH;
 	}
 
-	function() public { buyin(); }
+	function() public payable { buyin(); }
 
 	// Public interaction:
 
