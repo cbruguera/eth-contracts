@@ -44,9 +44,12 @@ contract SecondPriceAuction {
 	// Constructor:
 
 	/// Simple constructor.
-	/// Token cap should take be in whole tokens, not smallest divisible units.
+	/// Token cap should take be in smallest divisible units.
+	/// 	NOTE: original SecondPriceAuction contract stipulates token cap must be given in whole tokens.
+	///		This does not seem correct, as only whole token values are transferred via transferFrom (which - in our wallet's case -
+	///     expects transfers in the smallest divisible amount)
 	function SecondPriceAuction(
-		address _notakeyClaimRegistry, 
+		address _notakeyClaimRegistry,
 		address _tokenContract,
 		address _treasury,
 		address _admin,
@@ -205,19 +208,21 @@ contract SecondPriceAuction {
 	function calculateEndTime() public constant returns (uint) {
 
 		/*
-		With a cap of 20000000, and EURWEI 1481, and a DIVISOR 1000,
-		this will produce a range of 2,17 days (0 eth) -> 0,04 days (at about ~7k+ ETH).
+		With a cap of 20000000000 (20 million tokens times DIVISOR), and EURWEI 1481, and a DIVISOR 1000,
+		this will produce a range of 2,11 days (0 eth) -> 0,56 days (at about ~7k+ ETH).
+
+		(factor / 10) should be read as (factor * 0.1)
 		*/
 
 		var factor = tokenCap / DIVISOR * EURWEI;
-		return beginTime + 943200 * factor / (totalAccounted + 5 * factor) - 0;
+		return beginTime + 18235 * factor / (totalAccounted + factor / 10) - 0;
 	}
 
 	/// The current price for a single indivisible part of a token. If a buyin happens now, this is
 	/// the highest price per indivisible token part that the buyer will pay. This doesn't
 	/// include the discount which may be available.
 	function currentPrice() public constant when_active returns (uint weiPerIndivisibleTokenPart) {
-		return (EURWEI * 943200 / (now - beginTime + 0) - EURWEI * 5) / DIVISOR;
+		return (EURWEI * 18235 / (now - beginTime + 0) - EURWEI / 10) / DIVISOR;
 	}
 
 	/// Returns the total indivisible token parts available for purchase right now.
