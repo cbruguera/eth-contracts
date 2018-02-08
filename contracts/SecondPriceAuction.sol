@@ -63,7 +63,7 @@ contract SecondPriceAuction {
 		admin = _admin;
 		beginTime = _beginTime;
 		tokenCap = _tokenCap;
-		endTime = beginTime + 28 days;
+		endTime = beginTime + DEFAULT_AUCTION_LENGTH;
 	}
 
 	// No default function, entry-level users
@@ -203,8 +203,14 @@ contract SecondPriceAuction {
 
 	/// The current end time of the sale assuming that nobody else buys in.
 	function calculateEndTime() public constant returns (uint) {
+
+		/*
+		With a cap of 20000000, and EURWEI 1481, and a DIVISOR 1000,
+		this will produce a range of 2,17 days (0 eth) -> 0,04 days (at about ~7k+ ETH).
+		*/
+
 		var factor = tokenCap / DIVISOR * EURWEI;
-		return beginTime + 40000000 * factor / (totalAccounted + 5 * factor) - 5760;
+		return beginTime + 943200 * factor / (totalAccounted + 5 * factor) - 0;
 	}
 
 	/// The current price for a single indivisible part of a token. If a buyin happens now, this is
@@ -390,13 +396,16 @@ contract SecondPriceAuction {
 	uint constant public BONUS_MIN_DURATION = 1 hours;
 
 	/// Minimum duration after sale begins that bonus is active.
-	uint constant public BONUS_MAX_DURATION = 24 hours;
+	uint constant public BONUS_MAX_DURATION = 12 hours;
 
 	/// Number of consecutive blocks where there must be no new interest before bonus ends.
 	uint constant public BONUS_LATCH = 2;
 
 	/// Number of Wei in one EUR, constant.
-	uint constant public EURWEI = 2000 szabo;
+	uint constant public EURWEI = 1481 szabo;
+
+	/// Initial auction length
+	uint constant public DEFAULT_AUCTION_LENGTH = 2 days;
 
 	/// Divisor of the token.
 	uint constant public DIVISOR = 1000;
