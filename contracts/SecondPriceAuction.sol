@@ -217,7 +217,7 @@ contract SecondPriceAuction {
 	/// the highest price per indivisible token part that the buyer will pay. This doesn't
 	/// include the discount which may be available.
 	function currentPrice() public constant when_active returns (uint weiPerIndivisibleTokenPart) {
-		return (EURWEI * 40000000 / (now - beginTime + 5760) - EURWEI * 5) / DIVISOR;
+		return (EURWEI * 943200 / (now - beginTime + 0) - EURWEI * 5) / DIVISOR;
 	}
 
 	/// Returns the total indivisible token parts available for purchase right now.
