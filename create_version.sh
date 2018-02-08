@@ -50,7 +50,7 @@ function ensure_git_clean {
   fi
 }
 
-if [ "${1:-}" != "--force" ]; then 
+if [ "${2:-}" != "--force" ]; then 
 	ensure_git_clean
 fi 
 
