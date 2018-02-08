@@ -9,7 +9,7 @@ contract IcoPassToken is StandardToken, DSMath {
   string public constant name = "IcoPassToken";
   string public constant symbol = "NIP";
   uint8 public constant decimals = 3;
-  uint256 public constant INITIAL_SUPPLY = 490000 * (10 ** uint256(decimals));
+  uint256 public constant INITIAL_SUPPLY = 60000000 * (10 ** uint256(decimals));
 
   uint private totalDeposited = 0;
   mapping (address => uint) private totalDepositedAtCycleStart;
@@ -17,7 +17,7 @@ contract IcoPassToken is StandardToken, DSMath {
 
   event DividendsDeposited(uint amt);
   event DividendsWithdrawn(address recipient, uint amt);
-  
+
   /**
    * @dev Constructor that gives msg.sender all of existing tokens.
    */
