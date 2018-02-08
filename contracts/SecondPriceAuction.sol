@@ -66,7 +66,7 @@ contract SecondPriceAuction {
 		endTime = beginTime + 28 days;
 	}
 
-	function() public { buyin(); }
+	function() public payable { buyin(); }
 
 	// Public interaction:
 
