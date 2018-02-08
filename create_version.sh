@@ -50,7 +50,9 @@ function ensure_git_clean {
   fi
 }
 
-ensure_git_clean
+if [ "${1:-}" != "--force" ]; then 
+	ensure_git_clean
+fi 
 
 OLDVERSION=$(cat VERSION)
 NEWVERSION=$(./increment_version.sh $VERSION_BUMP_LEVEL $OLDVERSION)
