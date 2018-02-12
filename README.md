@@ -104,6 +104,14 @@ npm uninstall web3-utils
 
     wget "https://raw.githubusercontent.com/notakey-kyc/eth-contracts/master/address_archive/$VERSION/$NETWORK.json"
 
+## Deploying on a network 
+
+ - Start testrpc e.g. from devchain project
+ 
+ - Run `./create_version.sh -m`, adjust -m, -M or -p for version number part to increase, use --force as second param to indicate non master branch build. This creates required contract resolution files in repository.  
+ 
+ - Run `./deploy_and_archive_addresses.sh rinkeby <version>`, where version is newly created tag. rinkeby is the network, where the contrats will be deployed. 
+     
 ## rinkeby
 
 Main test account: d46c9b407afa991c4c510ab5ebf8959ea7409c17
